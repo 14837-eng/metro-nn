@@ -172,23 +172,14 @@
 
       // ============================================================
       // РЕАЛЬНЫЕ ДАННЫЕ О МЕТРО НИЖНЕГО НОВГОРОДА
-      // Всего: 15 станций на двух линиях
-      // Автозаводская (красная) — 11 станций
-      // Сормовско-Мещерская (синяя) — 5 станций
-      // Пересадка: «Московская»
       // ============================================================
 
       const lines = [
         {
           name: "Автозаводская",
-          color: "#e30613", // красный
+          color: "#e30613",
           stations: [
-            {
-              name: "Горьковская",
-              lat: 56.314015,
-              lng: 43.995018,
-              status: "open",
-            },
+            { name: "Горьковская", lat: 56.31389, lng: 43.995, status: "open" },
             {
               name: "Московская",
               lat: 56.32139,
@@ -233,7 +224,7 @@
         },
         {
           name: "Сормовско-Мещерская",
-          color: "#0066cc", // синий
+          color: "#0066cc",
           stations: [
             {
               name: "Буревестник",
@@ -315,11 +306,9 @@
         }
       }
 
-      // Храним уже созданные маркеры, чтобы не дублировать пересадочные станции
       const createdMarkers = {};
 
       function createMarker(station, lineColor) {
-        // Если маркер для этой станции уже создан — не дублируем
         if (createdMarkers[station.name]) return;
 
         const info = getStatusInfo(station.status);
@@ -369,7 +358,6 @@
                     <div class="progress-text">${p}% завершено</div>
                 `;
 
-          // Добавляем информацию о тоннелях
           if (station.tunnelInfo) {
             popupContent += `<div style="margin-top: 10px; font-size: 12px; color: #555; font-weight: 600;">Проходка тоннелей:</div>`;
 
@@ -404,7 +392,6 @@
             }
 
             if (station.tunnelInfo.toSvobody) {
-              const t = station.tunnelInfo.toSvobody;
               popupContent += `
                             <div style="font-size: 12px; color: #444; margin-top: 6px;">
                                 Тоннели до «Площади Свободы»:
@@ -425,7 +412,7 @@
       }
 
       // ============================================================
-      // ЕДИНЫЙ ИСТОЧНИК КООРДИНАТ (DRY: и маркеры, и тоннели — отсюда)
+      // ЕДИНЫЙ ИСТОЧНИК КООРДИНАТ (DRY)
       // ============================================================
       const stationCoords = {};
       lines.forEach((line) =>
@@ -467,8 +454,86 @@
         ];
       }
 
+      // Смещает ломаную целиком, сшивая соседние сегменты «митером»
+      // (усреднением точки разрыва на стыке). Для плавных изгибов ок.
+      function offsetPath(path, meters) {
+        if (!meters || path.length < 2) return path;
+        const segs = [];
+        for (let i = 0; i < path.length - 1; i++) {
+          segs.push(offsetLine(path[i], path[i + 1], meters));
+        }
+        const result = [segs[0][0]];
+        for (let i = 0; i < segs.length - 1; i++) {
+          const end = segs[i][1];
+          const start = segs[i + 1][0];
+          result.push([(end[0] + start[0]) / 2, (end[1] + start[1]) / 2]);
+        }
+        result.push(segs[segs.length - 1][1]);
+        return result;
+      }
+
+      // Длины сегментов ломаной (в «псевдо-метрах» — градусы с cos-широтой)
+      function pathMetrics(path) {
+        const segs = [];
+        let total = 0;
+        for (let i = 0; i < path.length - 1; i++) {
+          const latMid = (path[i][0] + path[i + 1][0]) / 2;
+          const cosLat = Math.cos((latMid * Math.PI) / 180);
+          const dx = (path[i + 1][1] - path[i][1]) * cosLat;
+          const dy = path[i + 1][0] - path[i][0];
+          const len = Math.hypot(dx, dy);
+          segs.push(len);
+          total += len;
+        }
+        return { segs, total };
+      }
+
+      // Точка на ломаной по доле пройденного пути (t ∈ [0,1])
+      function pointAlongPath(path, t) {
+        const { segs, total } = pathMetrics(path);
+        if (total === 0) return path[0];
+        let target = total * t;
+        for (let i = 0; i < segs.length; i++) {
+          if (target <= segs[i]) {
+            const localT = segs[i] === 0 ? 0 : target / segs[i];
+            return pointAlong(path[i], path[i + 1], localT);
+          }
+          target -= segs[i];
+        }
+        return path[path.length - 1];
+      }
+
+      // Разбивает ломаную на [пройденная часть, остаток] по доле t
+      function splitPath(path, t) {
+        const { segs, total } = pathMetrics(path);
+        let target = total * t;
+        const done = [path[0]];
+        const rest = [];
+        let split = false;
+        for (let i = 0; i < segs.length; i++) {
+          if (split) {
+            rest.push(path[i + 1]);
+            continue;
+          }
+          if (target >= segs[i]) {
+            done.push(path[i + 1]);
+            target -= segs[i];
+          } else {
+            const localT = segs[i] === 0 ? 0 : target / segs[i];
+            const mid = pointAlong(path[i], path[i + 1], localT);
+            done.push(mid);
+            rest.push(mid, path[i + 1]);
+            split = true;
+          }
+        }
+        return { done, rest };
+      }
+
       // ============================================================
-      // ДАННЫЕ О ТОННЕЛЯХ (единый источник правды)
+      // ДАННЫЕ О ТОННЕЛЯХ
+      // via — промежуточные точки. Можно задавать:
+      //   • как [lat, lng]
+      //   • как строку с именем станции (взято из lines)
       // ============================================================
       const shieldIcon = L.divIcon({
         className: "shield-marker",
@@ -500,7 +565,7 @@
           to: "Площадь Свободы",
           color: "#0066cc",
           weight: 2,
-          offset: 18, // параллельно левому, +18 м вбок
+          offset: 18,
           started: true,
           total: 486,
           shield: { name: "Алёна" },
@@ -510,6 +575,12 @@
           id: "sennaya-svobody",
           from: "Площадь Свободы",
           to: "Сенная",
+          // изгиб трассы между станциями
+          via: [
+            [56.319052, 44.020148],
+            [56.31993, 44.029098],
+            [56.322385, 44.034482],
+          ],
           color: "#4caf50",
           weight: 4,
           complete: true,
@@ -517,15 +588,25 @@
         },
       ];
 
+      // Собирает полный путь тоннеля: [from, ...via, to]
+      function buildTunnelPath(t) {
+        const from = coords(t.from);
+        const to = coords(t.to);
+        if (!from || !to) return null;
+        const via = (t.via || [])
+          .map((p) => (Array.isArray(p) ? p : coords(p)))
+          .filter(Boolean);
+        return [from, ...via, to];
+      }
+
       // ============================================================
-      // ОТРИСОВКА ТОННЕЛЕЙ (универсальный рендер по данным)
+      // ОТРИСОВКА ТОННЕЛЕЙ
       // ============================================================
       tunnels.forEach((t) => {
-        let from = coords(t.from);
-        let to = coords(t.to);
-        if (!from || !to) return;
+        let path = buildTunnelPath(t);
+        if (!path) return;
 
-        if (t.offset) [from, to] = offsetLine(from, to, t.offset);
+        if (t.offset) path = offsetPath(path, t.offset);
 
         const percent = t.progress
           ? Math.round((t.progress.done / t.progress.total) * 100)
@@ -533,7 +614,7 @@
 
         // 1. Полностью построенный тоннель
         if (t.complete) {
-          L.polyline([from, to], {
+          L.polyline(path, {
             color: t.color,
             weight: t.weight,
             opacity: 0.8,
@@ -543,15 +624,13 @@
           return;
         }
 
-        // 2. Тоннель в процессе проходки (есть числовой прогресс)
+        // 2. Тоннель в процессе проходки
         if (t.progress) {
-          const donePoint = pointAlong(
-            from,
-            to,
-            t.progress.done / t.progress.total,
-          );
+          const t01 = t.progress.done / t.progress.total;
+          const { done, rest } = splitPath(path, t01);
+          const donePoint = pointAlongPath(path, t01);
 
-          L.polyline([from, donePoint], {
+          L.polyline(done, {
             color: t.color,
             weight: t.weight,
             opacity: 0.9,
@@ -561,14 +640,16 @@
               `${t.label}<br>Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
             );
 
-          L.polyline([donePoint, to], {
-            color: t.color,
-            weight: 3,
-            opacity: 0.5,
-            dashArray: "10, 10",
-          })
-            .addTo(map)
-            .bindPopup(`${t.label}: оставшийся участок`);
+          if (rest.length > 1) {
+            L.polyline(rest, {
+              color: t.color,
+              weight: 3,
+              opacity: 0.5,
+              dashArray: "10, 10",
+            })
+              .addTo(map)
+              .bindPopup(`${t.label}: оставшийся участок`);
+          }
 
           if (t.shield?.atEnd) {
             L.marker(donePoint, { icon: shieldIcon })
@@ -585,7 +666,7 @@
         if (t.started) {
           const shieldPart = t.shield ? `щитом «${t.shield.name}» ` : "";
           const totalPart = t.total ? `, план: ${t.total} колец` : "";
-          L.polyline([from, to], {
+          L.polyline(path, {
             color: t.color,
             weight: t.weight,
             opacity: 0.5,
@@ -633,7 +714,9 @@
       console.log(
         "  • Правый тоннель (Горьковская → Пл. Свободы): проходка начата (июль 2026)",
       );
-      console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2)");
+      console.log(
+        "  • Тоннели Сенная ↔ Пл. Свободы: построены (с изгибом через 56.31993, 44.029098)",
+      );
       console.log(
         "  • Станции «Пл. Свободы» и «Сенная»: откроются в 2027 году",
       );
