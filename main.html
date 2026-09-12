@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Метро Нижнего Новгорода — Прогресс строительства</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      #header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        position: relative;
+        z-index: 1000;
+      }
+      #header h1 {
+        font-size: 22px;
+        font-weight: 600;
+      }
+      #header .subtitle {
+        font-size: 13px;
+        opacity: 0.7;
+        margin-top: 2px;
+      }
+      #legend {
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+      }
+      #legend .item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .dot.green {
+        background: #4caf50;
+      }
+      .dot.orange {
+        background: #ff9800;
+      }
+      .dot.gray {
+        background: #9e9e9e;
+      }
+      #map {
+        width: 100vw;
+        height: calc(100vh - 60px);
+      }
+      .station-popup .leaflet-popup-content-wrapper {
+        border-radius: 12px;
+        padding: 4px;
+      }
+      .station-popup .leaflet-popup-content {
+        margin: 12px;
+        min-width: 260px;
+      }
+      .popup-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .popup-line {
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 4px;
+      }
+      .popup-status {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        margin-top: 6px;
+      }
+      .popup-status.open {
+        background: #4caf50;
+      }
+      .popup-status.building {
+        background: #ff9800;
+      }
+      .popup-status.planned {
+        background: #9e9e9e;
+      }
+      .progress-bar-container {
+        margin-top: 10px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        height: 10px;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ff9800, #ffb74d);
+        transition: width 0.5s ease;
+      }
+      .progress-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+        text-align: right;
+      }
+      .popup-year {
+        font-size: 12px;
+        color: #888;
+        margin-top: 6px;
+      }
+      .leaflet-popup-content {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <div>
+        <h1>🚇 Метро Нижнего Новгорода</h1>
+        <div class="subtitle">Интерактивная карта прогресса строительства</div>
+      </div>
+      <div id="legend">
+        <div class="item"><span class="dot green"></span> Работает</div>
+        <div class="item"><span class="dot orange"></span> Строится</div>
+        <div class="item"><span class="dot gray"></span> В проекте</div>
+      </div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const map = L.map("map", {
+        zoomControl: true,
+        attributionControl: true,
+      }).setView([56.31, 43.96], 12);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 18,
+      }).addTo(map);
+
+      // ============================================================
+      // РЕАЛЬНЫЕ ДАННЫЕ О МЕТРО НИЖНЕГО НОВГОРОДА
+      // Всего: 15 станций на двух линиях
+      // Автозаводская (красная) — 11 станций
+      // Сормовско-Мещерская (синяя) — 5 станций
+      // Пересадка: «Московская»
+      // ============================================================
+
+      const lines = [
+        {
+          name: "Автозаводская",
+          color: "#e30613", // красный
+          stations: [
+            { name: "Горьковская", lat: 56.31389, lng: 43.995, status: "open" },
+            {
+              name: "Московская",
+              lat: 56.32139,
+              lng: 43.94528,
+              status: "open",
+            },
+            {
+              name: "Чкаловская",
+              lat: 56.31139,
+              lng: 43.93778,
+              status: "open",
+            },
+            { name: "Ленинская", lat: 56.29803, lng: 43.93753, status: "open" },
+            { name: "Заречная", lat: 56.28512, lng: 43.92763, status: "open" },
+            {
+              name: "Двигатель Революции",
+              lat: 56.27583,
+              lng: 43.92056,
+              status: "open",
+            },
+            {
+              name: "Пролетарская",
+              lat: 56.26556,
+              lng: 43.9125,
+              status: "open",
+            },
+            {
+              name: "Автозаводская",
+              lat: 56.25806,
+              lng: 43.90194,
+              status: "open",
+            },
+            { name: "Комсомольская", lat: 56.2525, lng: 43.89, status: "open" },
+            { name: "Кировская", lat: 56.24778, lng: 43.87833, status: "open" },
+            {
+              name: "Парк культуры",
+              lat: 56.2425,
+              lng: 43.85889,
+              status: "open",
+            },
+          ],
+        },
+        {
+          name: "Сормовско-Мещерская",
+          color: "#0066cc", // синий
+          stations: [
+            {
+              name: "Буревестник",
+              lat: 56.33331,
+              lng: 43.8946,
+              status: "open",
+            },
+            {
+              name: "Бурнаковская",
+              lat: 56.32536,
+              lng: 43.91336,
+              status: "open",
+            },
+            {
+              name: "Канавинская",
+              lat: 56.32057,
+              lng: 43.9267,
+              status: "open",
+            },
+            {
+              name: "Московская",
+              lat: 56.32139,
+              lng: 43.94528,
+              status: "open",
+            },
+            { name: "Стрелка", lat: 56.33529, lng: 43.94956, status: "open" },
+          ],
+        },
+        {
+          name: "Строящиеся станции",
+          color: "#ff9800",
+          stations: [
+            {
+              name: "Сормовская",
+              lat: 56.33,
+              lng: 43.89,
+              status: "building",
+              progress: 5,
+              year: "~2029",
+              line: "Сормовско-Мещерская",
+            },
+            {
+              name: "Площадь Свободы",
+              lat: 56.31752,
+              lng: 44.01665,
+              status: "building",
+              progress: 40,
+              year: "~2027",
+              line: "Автозаводская",
+            },
+            {
+              name: "Сенная",
+              lat: 56.32237,
+              lng: 44.03726,
+              status: "building",
+              progress: 35,
+              year: "~2027",
+              line: "Автозаводская",
+            },
+          ],
+        },
+      ];
+
+      function getStatusInfo(status) {
+        switch (status) {
+          case "open":
+            return { label: "Открыта", cls: "open", icon: "✅" };
+          case "building":
+            return { label: "Строится", cls: "building", icon: "🚧" };
+          case "planned":
+            return { label: "В проекте", cls: "planned", icon: "📋" };
+        }
+      }
+
+      // Храним уже созданные маркеры, чтобы не дублировать пересадочные станции
+      const createdMarkers = {};
+
+      function createMarker(station, lineColor) {
+        // Если маркер для этой станции уже создан — не дублируем
+        if (createdMarkers[station.name]) return;
+
+        const info = getStatusInfo(station.status);
+        let bgColor = "#9e9e9e";
+        if (station.status === "open") bgColor = "#4caf50";
+        if (station.status === "building") bgColor = "#ff9800";
+
+        const icon = L.divIcon({
+          className: "custom-marker",
+          html: `<div style="
+                    width: 28px; height: 28px;
+                    background: ${bgColor};
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 14px;
+                ">${info.icon}</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+
+        const marker = L.marker([station.lat, station.lng], { icon }).addTo(
+          map,
+        );
+
+        // Определяем линию для отображения в попапе
+        let lineDisplay =
+          station.line ||
+          (lineColor === "#e30613"
+            ? "Автозаводская"
+            : lineColor === "#0066cc"
+              ? "Сормовско-Мещерская"
+              : "Строящаяся");
+
+        let popupContent = `
+                <div class="popup-title">${info.icon} ${station.name}</div>
+                <div class="popup-line">Линия: <b style="color:${lineColor}">${lineDisplay}</b></div>
+                <span class="popup-status ${info.cls}">${info.label}</span>
+            `;
+
+        if (station.status === "building") {
+          const p = station.progress || 0;
+          popupContent += `
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${p}%"></div>
+                    </div>
+                    <div class="progress-text">${p}% завершено</div>
+                    <div class="popup-year">Ожидаемый год открытия: ${station.year || "—"}</div>
+                `;
+        }
+
+        marker.bindPopup(popupContent, { className: "station-popup" });
+        createdMarkers[station.name] = marker;
+      }
+
+      // Рисуем линии (только для действующих)
+      lines
+        .filter((l) => l.name !== "Строящиеся станции")
+        .forEach((line) => {
+          const coords = line.stations.map((s) => [s.lat, s.lng]);
+          L.polyline(coords, {
+            color: line.color,
+            weight: 5,
+            opacity: 0.7,
+          }).addTo(map);
+        });
+
+      // Добавляем станции
+      lines.forEach((line) => {
+        line.stations.forEach((station) => {
+          createMarker(station, line.color);
+        });
+      });
+
+      // Статистика в консоли
+      const totalStations = 15;
+      const openStations = 15;
+      const buildingStations = 3;
+      console.log(
+        `Всего станций (действующих): ${totalStations}, работает: ${openStations}, строится: ${buildingStations}`,
+      );
+      console.log(
+        "Линии: Автозаводская (красная, 11 станций), Сормовско-Мещерская (синяя, 5 станций)",
+      );
+      console.log("Пересадка: «Московская» (кроссплатформенная)");
+    </script>
+  </body>
+</html>
