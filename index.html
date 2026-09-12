@@ -70,7 +70,6 @@
         border-radius: 12px;
         padding: 4px;
       }
-      /* Ширину задаёт Leaflet через опции minWidth/maxWidth */
       .station-popup .leaflet-popup-content {
         margin: 12px;
         max-height: 65vh;
@@ -140,7 +139,6 @@
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
 
-      /* ===== Аккордеон ===== */
       .accordion {
         margin-top: 10px;
       }
@@ -184,7 +182,6 @@
         display: block;
       }
 
-      /* ===== Этапы ===== */
       .stage-item {
         display: flex;
         align-items: flex-start;
@@ -226,7 +223,6 @@
         margin-top: 2px;
         text-align: right;
       }
-      /* Блок перспектив (нейтральный) */
       .popup-outlook {
         font-size: 11px;
         color: #444;
@@ -253,7 +249,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-      // ===== Аккордеон =====
       function toggleAcc(header) {
         const item = header.parentElement;
         const container = item.parentElement;
@@ -356,11 +351,17 @@
             },
             {
               name: "Московская",
-              lat: 56.322485,
-              lng: 43.954706,
+              lat: 56.321178,
+              lng: 43.948028,
               status: "open",
             },
-            { name: "Стрелка", lat: 56.33529, lng: 43.94956, status: "open" },
+            {
+              name: "Стрелка",
+              lat: 56.33529,
+              lng: 43.94956,
+              status: "open",
+              viaBefore: [[56.33529, 43.94956]],
+            },
           ],
         },
         {
@@ -521,7 +522,6 @@
 
       const createdMarkers = {};
 
-      // ===== Аккордеон этапов =====
       function buildAccordion(stages, tunnelInfo) {
         let html = '<div class="accordion">';
 
@@ -704,7 +704,6 @@
           popupContent += `<div class="popup-note">Данные на сентябрь 2026 г.</div>`;
         }
 
-        // ВАЖНО: ширину задаём через опции Leaflet, а не через CSS
         marker.bindPopup(popupContent, {
           className: "station-popup",
           minWidth: 320,
@@ -713,9 +712,6 @@
         createdMarkers[station.name] = marker;
       }
 
-      // ============================================================
-      // КООРДИНАТЫ
-      // ============================================================
       const stationCoords = {};
       lines.forEach((line) =>
         line.stations.forEach((s) => {
@@ -740,9 +736,6 @@
         return pts;
       }
 
-      // ============================================================
-      // ГЕОМЕТРИЯ
-      // ============================================================
       function pointAlong(from, to, t) {
         return [
           from[0] + (to[0] - from[0]) * t,
@@ -872,8 +865,37 @@
       }
 
       // ============================================================
-      // ТОННЕЛИ
+      // ОБВОДКА (casing) ДЛЯ МАРШРУТОВ
       // ============================================================
+      const ROUND_STYLE = { lineCap: "round", lineJoin: "round" };
+      const SMOOTH_SAMPLES = 16;
+
+      /**
+       * Рисует полилинию с белой обводкой.
+       * Сначала добавляется более толстая белая линия (каширование),
+       * затем поверх неё — цветная. Возвращает цветную полилинию,
+       * чтобы к ней можно было привязать popup.
+       */
+      function addCasedPolyline(path, options) {
+        if (!path || path.length < 2) return null;
+        const weight = options.weight || 5;
+        const outlineWeight = weight + 4;
+
+        // Белая обводка (снизу)
+        L.polyline(path, {
+          color: "#ffffff",
+          weight: outlineWeight,
+          opacity: 0.95,
+          ...ROUND_STYLE,
+        }).addTo(map);
+
+        // Цветная линия (сверху)
+        return L.polyline(path, {
+          ...ROUND_STYLE,
+          ...options,
+        }).addTo(map);
+      }
+
       const shieldIcon = L.divIcon({
         className: "shield-marker",
         html: `<div style="
@@ -886,9 +908,6 @@
         iconSize: [16, 16],
         iconAnchor: [8, 8],
       });
-
-      const ROUND_STYLE = { lineCap: "round", lineJoin: "round" };
-      const SMOOTH_SAMPLES = 16;
 
       const tunnels = [
         {
@@ -952,14 +971,11 @@
           : 0;
 
         if (t.complete) {
-          L.polyline(path, {
+          addCasedPolyline(path, {
             color: t.color,
             weight: t.weight,
             opacity: 0.8,
-            ...ROUND_STYLE,
-          })
-            .addTo(map)
-            .bindPopup(t.label);
+          }).bindPopup(t.label);
           return;
         }
 
@@ -968,27 +984,21 @@
           const { done, rest } = splitPath(path, t01);
           const donePoint = pointAlongPath(path, t01);
 
-          L.polyline(done, {
+          addCasedPolyline(done, {
             color: t.color,
             weight: t.weight,
             opacity: 0.9,
-            ...ROUND_STYLE,
-          })
-            .addTo(map)
-            .bindPopup(
-              `${t.label}<br>Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
-            );
+          }).bindPopup(
+            `${t.label}<br>Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
+          );
 
           if (rest.length > 1) {
-            L.polyline(rest, {
+            addCasedPolyline(rest, {
               color: t.color,
               weight: 3,
               opacity: 0.5,
               dashArray: "10, 10",
-              ...ROUND_STYLE,
-            })
-              .addTo(map)
-              .bindPopup(`${t.label}: оставшийся участок`);
+            }).bindPopup(`${t.label}: оставшийся участок`);
           }
 
           if (t.shield?.atEnd) {
@@ -1005,32 +1015,28 @@
         if (t.started) {
           const shieldPart = t.shield ? `щитом «${t.shield.name}» ` : "";
           const totalPart = t.total ? `, план: ${t.total} колец` : "";
-          L.polyline(path, {
+          addCasedPolyline(path, {
             color: t.color,
             weight: t.weight,
             opacity: 0.5,
             dashArray: "5, 8",
-            ...ROUND_STYLE,
-          })
-            .addTo(map)
-            .bindPopup(
-              `${t.label}<br>Проходка ${shieldPart}начата${totalPart}`,
-            );
+          }).bindPopup(
+            `${t.label}<br>Проходка ${shieldPart}начата${totalPart}`,
+          );
         }
       });
 
-      // Действующие линии
+      // Действующие линии — с белой обводкой
       lines
         .filter((l) => l.name !== "Строящиеся станции")
         .forEach((line) => {
           const control = buildLinePath(line);
           const smooth = smoothPath(control, SMOOTH_SAMPLES);
-          L.polyline(smooth, {
+          addCasedPolyline(smooth, {
             color: line.color,
             weight: 5,
             opacity: 0.7,
-            ...ROUND_STYLE,
-          }).addTo(map);
+          });
         });
 
       // Станции
@@ -1041,7 +1047,7 @@
       });
 
       // ============================================================
-      // СТАТИСТИКА
+      // СТАТИСТИКА (в консоль)
       // ============================================================
       console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА ===");
       console.log("Действующие линии:");
