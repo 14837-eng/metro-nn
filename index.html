@@ -263,8 +263,8 @@
           stations: [
             {
               name: "Площадь Свободы",
-              lat: 56.31752,
-              lng: 44.01665,
+              lat: 56.31782,
+              lng: 44.013717,
               status: "building",
               progress: 40,
               year: "~2027",
@@ -288,8 +288,8 @@
             },
             {
               name: "Сормовская",
-              lat: 56.3522, // Обновленная широта
-              lng: 43.8738, // Обновленная долгота
+              lat: 56.3522,
+              lng: 43.8738,
               status: "building",
               progress: 5,
               year: "~2029",
@@ -420,19 +420,24 @@
       }
 
       // ============================================================
-      // ВИЗУАЛИЗАЦИЯ ТОННЕЛЕЙ
+      // ЕДИНЫЙ ИСТОЧНИК КООРДИНАТ (DRY: и маркеры, и тоннели — отсюда)
       // ============================================================
+      const stationCoords = {};
+      lines.forEach((line) =>
+        line.stations.forEach((s) => {
+          stationCoords[s.name] = [s.lat, s.lng];
+        }),
+      );
 
-      // Координаты станций, между которыми строятся тоннели
-      const gorkovskaya = [56.31389, 43.995];
-      const svobody = [56.31752, 44.01665];
-      const sennaya = [56.32237, 44.03726];
+      function coords(name) {
+        const c = stationCoords[name];
+        if (!c) console.warn("⚠️ Нет координат для станции:", name);
+        return c;
+      }
 
-      // ------------------------------------------------------------
-      // Вспомогательные функции геометрии
-      // ------------------------------------------------------------
-
-      // Точка на прямой между from и to (t от 0 до 1)
+      // ============================================================
+      // ГЕОМЕТРИЯ
+      // ============================================================
       function pointAlong(from, to, t) {
         return [
           from[0] + (to[0] - from[0]) * t,
@@ -440,14 +445,12 @@
         ];
       }
 
-      // Параллельная линия, смещённая вбок на meters метров
       function offsetLine(from, to, meters) {
         const latMid = (from[0] + to[0]) / 2;
         const cosLat = Math.cos((latMid * Math.PI) / 180);
         const dx = (to[1] - from[1]) * cosLat;
         const dy = to[0] - from[0];
         const len = Math.hypot(dx, dy) || 1;
-        // единичный перпендикуляр
         const px = -dy / len;
         const py = dx / len;
         const degPerMeter = 1 / 111320;
@@ -459,61 +462,9 @@
         ];
       }
 
-      // Точка, в которой сейчас находится щит (конец пройденного участка)
-      const LEFT_DONE = 270 / 485; // ≈ 0.557 (56%)
-      const leftDonePoint = pointAlong(gorkovskaya, svobody, LEFT_DONE);
-
-      // ------------------------------------------------------------
-      // 1. Построенные тоннели между «Сенной» и «Площадью Свободы»
-      // ------------------------------------------------------------
-      L.polyline([svobody, sennaya], {
-        color: "#4caf50",
-        weight: 4,
-        opacity: 0.8,
-      })
-        .addTo(map)
-        .bindPopup(
-          "Тоннели между «Сенной» и «Площадью Свободы» — построены ✅",
-        );
-
-      // ------------------------------------------------------------
-      // 2. Левый тоннель «Горьковская» → «Пл. Свободы»
-      //    Пройденный участок — строго по прямой между станциями
-      // ------------------------------------------------------------
-      L.polyline([gorkovskaya, leftDonePoint], {
-        color: "#ff9800",
-        weight: 5,
-        opacity: 0.9,
-      })
-        .addTo(map)
-        .bindPopup("Левый тоннель: пройдено 270 из 485 колец (56%)");
-
-      // Оставшийся участок — пунктиром, по той же прямой
-      L.polyline([leftDonePoint, svobody], {
-        color: "#ff9800",
-        weight: 3,
-        opacity: 0.5,
-        dashArray: "10, 10",
-      })
-        .addTo(map)
-        .bindPopup("Левый тоннель: оставшийся участок до «Площади Свободы»");
-
-      // ------------------------------------------------------------
-      // 3. Правый тоннель — параллельно левому, со смещением ~18 м
-      // ------------------------------------------------------------
-      const rightTunnel = offsetLine(gorkovskaya, svobody, 18);
-      L.polyline(rightTunnel, {
-        color: "#0066cc",
-        weight: 2,
-        opacity: 0.5,
-        dashArray: "5, 8",
-      })
-        .addTo(map)
-        .bindPopup("Правый тоннель: проходка начата щитом «Алёна»");
-
-      // ------------------------------------------------------------
-      // 4. Точка положения щита «Евдокия»
-      // ------------------------------------------------------------
+      // ============================================================
+      // ДАННЫЕ О ТОННЕЛЯХ (единый источник правды)
+      // ============================================================
       const shieldIcon = L.divIcon({
         className: "shield-marker",
         html: `<div style="
@@ -527,12 +478,120 @@
         iconAnchor: [8, 8],
       });
 
-      L.marker(leftDonePoint, { icon: shieldIcon })
-        .addTo(map)
-        .bindPopup(
-          "🛠️ Щит «Евдокия» — текущее положение<br>" +
-            "Пройдено 270 из 485 колец (56%)",
-        );
+      const tunnels = [
+        {
+          id: "left",
+          from: "Горьковская",
+          to: "Площадь Свободы",
+          color: "#ff9800",
+          weight: 5,
+          progress: { done: 270, total: 485 },
+          shield: { name: "Евдокия", atEnd: true },
+          label: "Левый тоннель (Горьковская → Пл. Свободы)",
+        },
+        {
+          id: "right",
+          from: "Горьковская",
+          to: "Площадь Свободы",
+          color: "#0066cc",
+          weight: 2,
+          offset: 18, // параллельно левому, +18 м вбок
+          started: true,
+          total: 486,
+          shield: { name: "Алёна" },
+          label: "Правый тоннель (Горьковская → Пл. Свободы)",
+        },
+        {
+          id: "sennaya-svobody",
+          from: "Площадь Свободы",
+          to: "Сенная",
+          color: "#4caf50",
+          weight: 4,
+          complete: true,
+          label: "Тоннели между «Сенной» и «Площадью Свободы» — построены ✅",
+        },
+      ];
+
+      // ============================================================
+      // ОТРИСОВКА ТОННЕЛЕЙ (универсальный рендер по данным)
+      // ============================================================
+      tunnels.forEach((t) => {
+        let from = coords(t.from);
+        let to = coords(t.to);
+        if (!from || !to) return;
+
+        if (t.offset) [from, to] = offsetLine(from, to, t.offset);
+
+        const percent = t.progress
+          ? Math.round((t.progress.done / t.progress.total) * 100)
+          : 0;
+
+        // 1. Полностью построенный тоннель
+        if (t.complete) {
+          L.polyline([from, to], {
+            color: t.color,
+            weight: t.weight,
+            opacity: 0.8,
+          })
+            .addTo(map)
+            .bindPopup(t.label);
+          return;
+        }
+
+        // 2. Тоннель в процессе проходки (есть числовой прогресс)
+        if (t.progress) {
+          const donePoint = pointAlong(
+            from,
+            to,
+            t.progress.done / t.progress.total,
+          );
+
+          L.polyline([from, donePoint], {
+            color: t.color,
+            weight: t.weight,
+            opacity: 0.9,
+          })
+            .addTo(map)
+            .bindPopup(
+              `${t.label}<br>Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
+            );
+
+          L.polyline([donePoint, to], {
+            color: t.color,
+            weight: 3,
+            opacity: 0.5,
+            dashArray: "10, 10",
+          })
+            .addTo(map)
+            .bindPopup(`${t.label}: оставшийся участок`);
+
+          if (t.shield?.atEnd) {
+            L.marker(donePoint, { icon: shieldIcon })
+              .addTo(map)
+              .bindPopup(
+                `🛠️ Щит «${t.shield.name}» — текущее положение<br>` +
+                  `Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
+              );
+          }
+          return;
+        }
+
+        // 3. Проходка только начата — пунктир по всей трассе
+        if (t.started) {
+          const shieldPart = t.shield ? `щитом «${t.shield.name}» ` : "";
+          const totalPart = t.total ? `, план: ${t.total} колец` : "";
+          L.polyline([from, to], {
+            color: t.color,
+            weight: t.weight,
+            opacity: 0.5,
+            dashArray: "5, 8",
+          })
+            .addTo(map)
+            .bindPopup(
+              `${t.label}<br>Проходка ${shieldPart}начата${totalPart}`,
+            );
+        }
+      });
 
       // Рисуем действующие линии метро
       lines
