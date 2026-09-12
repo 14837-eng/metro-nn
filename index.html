@@ -75,7 +75,7 @@
       }
       .station-popup .leaflet-popup-content {
         margin: 12px;
-        min-width: 260px;
+        min-width: 320px;
       }
       .popup-title {
         font-size: 16px;
@@ -118,9 +118,6 @@
         background: linear-gradient(90deg, #ff9800, #ffb74d);
         transition: width 0.5s ease;
       }
-      .progress-bar-fill.blue {
-        background: linear-gradient(90deg, #0066cc, #4d94ff);
-      }
       .progress-text {
         font-size: 12px;
         color: #666;
@@ -142,27 +139,70 @@
       .leaflet-popup-content {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
-      /* НОВОЕ: стили для детальной информации */
-      .popup-detail {
+      /* Блок этапов строительства */
+      .stage-list {
+        margin-top: 10px;
         font-size: 12px;
-        color: #444;
-        margin-top: 8px;
-        padding: 8px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border-left: 3px solid #ff9800;
       }
-      .popup-detail strong {
+      .stage-section-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #555;
+        margin-top: 10px;
+        margin-bottom: 4px;
+      }
+      .stage-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 4px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .stage-item:last-child {
+        border-bottom: none;
+      }
+      .stage-icon {
+        flex-shrink: 0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .stage-text {
+        color: #444;
+        line-height: 1.4;
+        flex: 1;
+      }
+      .stage-text strong {
         color: #1a1a2e;
       }
-      .popup-prospect {
+      /* Мини-прогресс-бар внутри этапа «В работе» */
+      .stage-progress-wrap {
+        margin-top: 4px;
+      }
+      .stage-progress-container {
+        background: #e0e0e0;
+        border-radius: 6px;
+        height: 6px;
+        overflow: hidden;
+      }
+      .stage-progress-fill {
+        height: 100%;
+        border-radius: 6px;
+        background: linear-gradient(90deg, #ff9800, #ffb74d);
+      }
+      .stage-progress-text {
+        font-size: 10px;
+        color: #888;
+        margin-top: 2px;
+        text-align: right;
+      }
+      /* Блок перспектив (нейтральный) */
+      .popup-outlook {
         font-size: 11px;
-        color: #555;
+        color: #444;
         margin-top: 6px;
         padding: 6px 8px;
-        background: #e8f4fd;
+        background: #f5f5f5;
         border-radius: 6px;
-        border-left: 3px solid #0066cc;
       }
     </style>
   </head>
@@ -193,7 +233,7 @@
       }).addTo(map);
 
       // ============================================================
-      // РЕАЛЬНЫЕ ДАННЫЕ О МЕТРО НИЖНЕГО НОВГОРОДА
+      // ДАННЫЕ О МЕТРО НИЖНЕГО НОВГОРОДА
       // ============================================================
 
       const lines = [
@@ -292,14 +332,47 @@
               lng: 44.013717,
               status: "building",
               progress: 40,
-              year: "~2027",
+              year: "декабрь 2027",
               line: "Автозаводская",
               tunnelInfo: {
                 left: { done: 270, total: 485, percent: 56 },
                 right: { done: 0, total: 486, percent: 0, started: true },
               },
+              stages: {
+                done: [
+                  "Проходка двух тоннелей от «Сенной» (щит «Владимир», ~1,5 км каждый)",
+                  "Подготовка котлована на ул. Горького: вынуто 10 000 м³ земли, смонтировано 256 т металлоконструкций",
+                  "Заливка бетонного основания котлована (более 70 спецмашин)",
+                ],
+                current: [
+                  {
+                    text: "Возведение монолитного железобетонного каркаса станционного комплекса",
+                    progress: 45,
+                  },
+                  {
+                    text: "Монтаж обвязочной балки — основания станции",
+                    progress: 60,
+                  },
+                  {
+                    text: "Проходка левого тоннеля от «Горьковской» (щит «Евдокия»): 270 из 485 колец",
+                    progress: 56,
+                  },
+                ],
+                remaining: [
+                  "Завершение проходки правого тоннеля от «Горьковской» (щит «Алёна»)",
+                  "Завершение проходки левого тоннеля от «Горьковской»",
+                  "Строительство пассажирских вестибюлей и внутренняя отделка",
+                  "Монтаж инженерных систем и благоустройство",
+                ],
+              },
+              detail:
+                "Тоннели между «Сенной» и «Площадью Свободы» полностью построены (2 из 2). " +
+                "Щит «Владимир» завершил работу в декабре 2025 года. " +
+                "Сейчас активная фаза — возведение станционного комплекса.",
+              outlook:
+                "Пассажиропоток в верхнюю часть города вырастет до 12,5 млн человек в год. " +
+                "Станция станет частью крупного транспортно-пересадочного узла.",
             },
-            // НОВОЕ: подробная информация о станции «Сенная»
             {
               name: "Сенная",
               lat: 56.32237,
@@ -311,22 +384,42 @@
               tunnelInfo: {
                 toSvobody: { done: 2, total: 2, percent: 100 },
               },
-              // НОВОЕ: детали о текущем статусе
+              stages: {
+                done: [
+                  "Тоннели до «Площади Свободы» (2 из 2, ~1,5 км каждый)",
+                  "Первый этап заливки фундамента в стартовом котловане",
+                  "Возведение монолитных стен станции",
+                  "Средний ярус технического блока: 20 т арматуры, 100 м³ бетона",
+                  "Лотковый участок: 78 т арматуры, 310 м³ бетона",
+                ],
+                current: [
+                  {
+                    text: "Сооружение перекрытий станционного комплекса",
+                    progress: 30,
+                  },
+                  {
+                    text: "Подготовка котлована под улицей Горького для подземных путей",
+                    progress: 20,
+                  },
+                  {
+                    text: "Обвязочная балка: 33 т арматуры, 600 м³ бетона",
+                    progress: 55,
+                  },
+                ],
+                remaining: [
+                  "Строительство подземных путей под улицей Горького",
+                  "Архитектурно-отделочные работы",
+                  "Монтаж систем водоснабжения, водоотведения, связи, электроснабжения",
+                  "Благоустройство прилегающей территории",
+                ],
+              },
               detail:
-                "Станционный комплекс: ведётся возведение монолитного железобетонного каркаса. " +
-                "Лотковый участок: 78 т арматуры, 310 м³ бетона. " +
-                "Обвязочная балка: 33 т арматуры, 600 м³ бетона.",
-              // НОВОЕ: перспективы развития
-              prospect:
+                "Работы ведутся одновременно на поверхности и на глубине ~16 метров. " +
+                "Строительство развернулось после положительного заключения Главгосэкспертизы (ноябрь 2025).",
+              outlook:
                 "Продление Автозаводской линии станет драйвером развития площади Сенной. " +
-                "Здесь появится крупный транспортно-пересадочный узел и более 300 тыс. кв. м " +
-                "новой недвижимости. Ожидаемый пассажиропоток — до 12,5 млн человек в год.",
-              // НОВОЕ: интерьеры
-              design:
-                "Интерьеры выполнят в серо-бежевых тонах с геометрическими узорами " +
-                "и современной подсветкой на стенах.",
+                "Здесь появится ТПУ и более 300 тыс. кв. м новой недвижимости.",
             },
-            // НОВОЕ: подробная информация о станции «Сормовская»
             {
               name: "Сормовская",
               lat: 56.3522,
@@ -335,17 +428,40 @@
               progress: 5,
               year: "2029",
               line: "Сормовско-Мещерская",
-              // НОВОЕ: детали о ходе подготовки
+              stages: {
+                done: [
+                  "Изъято 627 из 726 объектов недвижимости (85%)",
+                  "Отключение всех сооружений от газа, электричества и воды",
+                  "Выкуп и переоформление зданий на ул. Станционной",
+                ],
+                current: [
+                  {
+                    text: "Этап 1 (из 8): расчистка территории от частных строений",
+                    progress: 40,
+                  },
+                  {
+                    text: "Перенос коммунальных сетей",
+                    progress: 25,
+                  },
+                  {
+                    text: "Снос гаражей на ул. Станционной",
+                    progress: 30,
+                  },
+                ],
+                remaining: [
+                  "Этапы 2–3: завершение расчистки территории (до конца 2026 года)",
+                  "Этапы 4–6: возведение двух камер для старта и приёма щитов",
+                  "Этапы 4–6: сооружение тоннелей и конструкций станции",
+                  "Этап 7: строительство притоннельных сооружений",
+                  "Этап 8: благоустройство прилегающей территории",
+                ],
+              },
               detail:
-                "Расчистка площадки: изъято 627 из 726 объектов (85%). " +
-                "Начался снос гаражей на ул. Станционной. " +
-                "Строительство разделено на 8 этапов. " +
-                "Первый этап: расчистка территории и перенос коммунальных сетей.",
-              // НОВОЕ: перспективы развития
-              prospect:
-                "Станция «Сормовская» и действующая сеть пригородных электричек " +
-                "станут частью крупного транспортно-пересадочного узла в заречной части города. " +
-                "Финансирование: 269 млн руб. на проектирование и подготовку.",
+                "Строительство разделено на 8 этапов для нивелирования рисков и контроля стоимости. " +
+                "Станция расположится на ул. Станционной — рядом с железнодорожной платформой.",
+              outlook:
+                "Станция «Сормовская» и сеть пригородных электричек станут частью " +
+                "крупного транспортно-пересадочного узла в заречной части города.",
             },
           ],
         },
@@ -363,6 +479,64 @@
       }
 
       const createdMarkers = {};
+
+      // НОВОЕ: рендер блока этапов с прогресс-барами для «В работе»
+      function buildStageBlock(stages) {
+        if (!stages) return "";
+        let html = '<div class="stage-list">';
+
+        if (stages.done && stages.done.length) {
+          html += '<div class="stage-section-title">✅ Выполнено</div>';
+          stages.done.forEach((item) => {
+            html += `<div class="stage-item">
+              <span class="stage-icon">✅</span>
+              <span class="stage-text">${item}</span>
+            </div>`;
+          });
+        }
+
+        if (stages.current && stages.current.length) {
+          html += '<div class="stage-section-title">🔄 В работе</div>';
+          stages.current.forEach((item) => {
+            // Поддержка как строк, так и объектов { text, progress }
+            const text = typeof item === "string" ? item : item.text;
+            const progress =
+              typeof item === "object" && item.progress != null
+                ? item.progress
+                : null;
+
+            html += `<div class="stage-item">
+              <span class="stage-icon">🔄</span>
+              <span class="stage-text">
+                ${text}
+                ${
+                  progress != null
+                    ? `<div class="stage-progress-wrap">
+                         <div class="stage-progress-container">
+                           <div class="stage-progress-fill" style="width:${progress}%"></div>
+                         </div>
+                         <div class="stage-progress-text">${progress}%</div>
+                       </div>`
+                    : ""
+                }
+              </span>
+            </div>`;
+          });
+        }
+
+        if (stages.remaining && stages.remaining.length) {
+          html += '<div class="stage-section-title">📋 Предстоит</div>';
+          stages.remaining.forEach((item) => {
+            html += `<div class="stage-item">
+              <span class="stage-icon">📋</span>
+              <span class="stage-text">${item}</span>
+            </div>`;
+          });
+        }
+
+        html += "</div>";
+        return html;
+      }
 
       function createMarker(station, lineColor) {
         if (createdMarkers[station.name]) return;
@@ -414,64 +588,16 @@
                     <div class="progress-text">${p}% завершено</div>
                 `;
 
-          // НОВОЕ: вывод детальной информации о ходе строительства
+          if (station.stages) {
+            popupContent += buildStageBlock(station.stages);
+          }
+
           if (station.detail) {
-            popupContent += `<div class="popup-detail">${station.detail}</div>`;
+            popupContent += `<div class="popup-note" style="border-top: 1px solid #eee; margin-top: 8px; padding-top: 6px; color: #666;">${station.detail}</div>`;
           }
 
-          if (station.tunnelInfo) {
-            popupContent += `<div style="margin-top: 10px; font-size: 12px; color: #555; font-weight: 600;">Проходка тоннелей:</div>`;
-
-            if (station.tunnelInfo.left) {
-              const t = station.tunnelInfo.left;
-              popupContent += `
-                            <div style="font-size: 12px; color: #444; margin-top: 4px;">
-                                Левый тоннель (Горьковская → Свободы):
-                                <div class="progress-bar-container" style="height: 8px; margin-top: 2px;">
-                                    <div class="progress-bar-fill" style="width: ${t.percent}%;"></div>
-                                </div>
-                                <div style="font-size: 11px; color: #666; text-align: right; margin-top: 2px;">
-                                    ${t.done} / ${t.total} колец (${t.percent}%)
-                                </div>
-                            </div>
-                        `;
-            }
-
-            if (station.tunnelInfo.right) {
-              const t = station.tunnelInfo.right;
-              const statusText = t.started
-                ? "проходка начата"
-                : "ожидает начала";
-              popupContent += `
-                            <div style="font-size: 12px; color: #444; margin-top: 6px;">
-                                Правый тоннель (Горьковская → Свободы):
-                                <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                                    ${statusText}, план: ${t.total} колец
-                                </div>
-                            </div>
-                        `;
-            }
-
-            if (station.tunnelInfo.toSvobody) {
-              popupContent += `
-                            <div style="font-size: 12px; color: #444; margin-top: 6px;">
-                                Тоннели до «Площади Свободы»:
-                                <div style="font-size: 11px; color: #4caf50; margin-top: 2px; font-weight: 600;">
-                                    ✅ Построены (2 из 2)
-                                </div>
-                            </div>
-                        `;
-            }
-          }
-
-          // НОВОЕ: вывод перспектив развития
-          if (station.prospect) {
-            popupContent += `<div class="popup-prospect">${station.prospect}</div>`;
-          }
-
-          // НОВОЕ: вывод информации об интерьерах
-          if (station.design) {
-            popupContent += `<div class="popup-note">🎨 ${station.design}</div>`;
+          if (station.outlook) {
+            popupContent += `<div class="popup-outlook">🔮 ${station.outlook}</div>`;
           }
 
           popupContent += `<div class="popup-year">Ожидаемый год открытия: ${station.year || "—"}</div>`;
@@ -483,7 +609,7 @@
       }
 
       // ============================================================
-      // ЕДИНЫЙ ИСТОЧНИК КООРДИНАТ (DRY)
+      // ЕДИНЫЙ ИСТОЧНИК КООРДИНАТ
       // ============================================================
       const stationCoords = {};
       lines.forEach((line) =>
@@ -499,7 +625,7 @@
       }
 
       // ============================================================
-      // СБОРКА ПОЛИЛИНИИ ЛИНИИ С УЧЁТОМ viaBefore У СТАНЦИЙ
+      // СБОРКА ПОЛИЛИНИИ
       // ============================================================
       function buildLinePath(line) {
         const pts = [];
@@ -555,11 +681,6 @@
         return result;
       }
 
-      // ------------------------------------------------------------
-      // Сглаживание ломаной сплайном Catmull-Rom.
-      // Кривая проходит точно через все исходные точки,
-      // но между ними — плавный изгиб вместо углов.
-      // ------------------------------------------------------------
       function catmullRom(p0, p1, p2, p3, t) {
         const t2 = t * t;
         const t3 = t2 * t;
@@ -649,7 +770,7 @@
       }
 
       // ============================================================
-      // ДАННЫЕ О ТОННЕЛЯХ
+      // ТОННЕЛИ
       // ============================================================
       const shieldIcon = L.divIcon({
         className: "shield-marker",
@@ -664,13 +785,7 @@
         iconAnchor: [8, 8],
       });
 
-      // Общие настройки для скруглённых концов и стыков линий
-      const ROUND_STYLE = {
-        lineCap: "round",
-        lineJoin: "round",
-      };
-
-      // Сколько подточек добавлять на каждый сегмент при сглаживании.
+      const ROUND_STYLE = { lineCap: "round", lineJoin: "round" };
       const SMOOTH_SAMPLES = 16;
 
       const tunnels = [
@@ -723,9 +838,6 @@
         return [from, ...via, to];
       }
 
-      // ============================================================
-      // ОТРИСОВКА ТОННЕЛЕЙ
-      // ============================================================
       tunnels.forEach((t) => {
         let path = buildTunnelPath(t);
         if (!path) return;
@@ -805,7 +917,7 @@
         }
       });
 
-      // Рисуем действующие линии метро (со сглаживанием и скруглением)
+      // Действующие линии
       lines
         .filter((l) => l.name !== "Строящиеся станции")
         .forEach((line) => {
@@ -819,7 +931,7 @@
           }).addTo(map);
         });
 
-      // Добавляем станции
+      // Станции
       lines.forEach((line) => {
         line.stations.forEach((station) => {
           createMarker(station, line.color);
@@ -827,7 +939,7 @@
       });
 
       // ============================================================
-      // СТАТИСТИКА И ПЕРСПЕКТИВЫ РАЗВИТИЯ (ОБНОВЛЕНО)
+      // СТАТИСТИКА И ПЕРСПЕКТИВЫ
       // ============================================================
       console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА ===");
       console.log("Действующие линии:");
@@ -844,36 +956,42 @@
       );
       console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2, 100%)");
       console.log("");
-      console.log("НОВОЕ: Станция «Сенная»:");
-      console.log("  • Прогресс: 35% (строительство станционного комплекса)");
-      console.log("  • Тоннели до «Пл. Свободы»: завершены ✅");
-      console.log("  • Открытие: декабрь 2027 года");
+      console.log("Станция «Площадь Свободы» (40%):");
       console.log(
-        "  • Интерьеры: серо-бежевые тона, геометрические узоры, подсветка",
+        "  ✅ Тоннели от «Сенной», подготовка котлована на ул. Горького",
       );
       console.log(
-        "  • Перспективы: ТПУ + 300 тыс. кв. м недвижимости, пассажиропоток до 12,5 млн чел/год",
+        "  🔄 Каркас — 45% | Обвязочная балка — 60% | Левый тоннель — 56%",
       );
-      console.log("");
-      console.log("НОВОЕ: Станция «Сормовская»:");
-      console.log("  • Прогресс: 5% (подготовительные работы)");
-      console.log("  • Изъято 627 из 726 объектов (85%)");
-      console.log("  • Начался снос гаражей на ул. Станционной");
       console.log(
-        "  • 8 этапов строительства, первый этап: расчистка и перенос сетей",
-      );
-      console.log("  • Открытие: 2029 год");
-      console.log(
-        "  • Перспективы: крупный ТПУ с пригородными электричками в заречной части",
+        "  📋 Правый тоннель, вестибюли, отделка, инженерные системы",
       );
       console.log("");
-      console.log("НОВОЕ: Перспективы развития метрополитена:");
+      console.log("Станция «Сенная» (35%):");
+      console.log("  ✅ Тоннели до «Пл. Свободы», фундамент, монолитные стены");
       console.log(
-        "  • Для сохранения интервала движения потребуется 80 новых вагонов",
+        "  🔄 Перекрытия — 30% | Котлован под ул. Горького — 20% | Обвязочная балка — 55%",
       );
       console.log(
-        "  • После 2030 года прорабатывается запуск беспилотных поездов",
+        "  📋 Подземные пути, отделка, инженерные системы, благоустройство",
       );
+      console.log("");
+      console.log("Станция «Сормовская» (5%):");
+      console.log(
+        "  ✅ Изъято 627 из 726 объектов (85%), отключение коммуникаций",
+      );
+      console.log(
+        "  🔄 Расчистка — 40% | Перенос сетей — 25% | Снос гаражей — 30%",
+      );
+      console.log(
+        "  📋 Этапы 2–8: расчистка, камеры щитов, тоннели, станция, благоустройство",
+      );
+      console.log("");
+      console.log("Перспективы развития:");
+      console.log(
+        "  • 80 новых вагонов метро для сохранения интервала движения",
+      );
+      console.log("  • После 2030 года — проработка беспилотных поездов");
       console.log(
         "  • Продление Автозаводской линии — драйвер развития площади Сенной",
       );
