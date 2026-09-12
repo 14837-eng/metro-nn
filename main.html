@@ -62,6 +62,9 @@
       .dot.gray {
         background: #9e9e9e;
       }
+      .dot.blue {
+        background: #0066cc;
+      }
       #map {
         width: 100vw;
         height: calc(100vh - 60px);
@@ -115,6 +118,9 @@
         background: linear-gradient(90deg, #ff9800, #ffb74d);
         transition: width 0.5s ease;
       }
+      .progress-bar-fill.blue {
+        background: linear-gradient(90deg, #0066cc, #4d94ff);
+      }
       .progress-text {
         font-size: 12px;
         color: #666;
@@ -125,6 +131,13 @@
         font-size: 12px;
         color: #888;
         margin-top: 6px;
+      }
+      .popup-note {
+        font-size: 11px;
+        color: #999;
+        margin-top: 8px;
+        border-top: 1px solid #eee;
+        padding-top: 6px;
       }
       .leaflet-popup-content {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -150,7 +163,7 @@
       const map = L.map("map", {
         zoomControl: true,
         attributionControl: true,
-      }).setView([56.31, 43.96], 12);
+      }).setView([56.31, 43.97], 13);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
@@ -249,15 +262,6 @@
           color: "#ff9800",
           stations: [
             {
-              name: "Сормовская",
-              lat: 56.33,
-              lng: 43.89,
-              status: "building",
-              progress: 5,
-              year: "~2029",
-              line: "Сормовско-Мещерская",
-            },
-            {
               name: "Площадь Свободы",
               lat: 56.31752,
               lng: 44.01665,
@@ -265,6 +269,10 @@
               progress: 40,
               year: "~2027",
               line: "Автозаводская",
+              tunnelInfo: {
+                left: { done: 270, total: 485, percent: 56 },
+                right: { done: 0, total: 486, percent: 0, started: true },
+              },
             },
             {
               name: "Сенная",
@@ -274,6 +282,18 @@
               progress: 35,
               year: "~2027",
               line: "Автозаводская",
+              tunnelInfo: {
+                toSvobody: { done: 2, total: 2, percent: 100 },
+              },
+            },
+            {
+              name: "Сормовская",
+              lat: 56.33,
+              lng: 43.89,
+              status: "building",
+              progress: 5,
+              year: "~2029",
+              line: "Сормовско-Мещерская",
             },
           ],
         },
@@ -321,7 +341,6 @@
           map,
         );
 
-        // Определяем линию для отображения в попапе
         let lineDisplay =
           station.line ||
           (lineColor === "#e30613"
@@ -343,15 +362,115 @@
                         <div class="progress-bar-fill" style="width: ${p}%"></div>
                     </div>
                     <div class="progress-text">${p}% завершено</div>
-                    <div class="popup-year">Ожидаемый год открытия: ${station.year || "—"}</div>
                 `;
+
+          // Добавляем информацию о тоннелях
+          if (station.tunnelInfo) {
+            popupContent += `<div style="margin-top: 10px; font-size: 12px; color: #555; font-weight: 600;">Проходка тоннелей:</div>`;
+
+            if (station.tunnelInfo.left) {
+              const t = station.tunnelInfo.left;
+              popupContent += `
+                            <div style="font-size: 12px; color: #444; margin-top: 4px;">
+                                Левый тоннель (Горьковская → Свободы):
+                                <div class="progress-bar-container" style="height: 8px; margin-top: 2px;">
+                                    <div class="progress-bar-fill" style="width: ${t.percent}%;"></div>
+                                </div>
+                                <div style="font-size: 11px; color: #666; text-align: right; margin-top: 2px;">
+                                    ${t.done} / ${t.total} колец (${t.percent}%)
+                                </div>
+                            </div>
+                        `;
+            }
+
+            if (station.tunnelInfo.right) {
+              const t = station.tunnelInfo.right;
+              const statusText = t.started
+                ? "проходка начата"
+                : "ожидает начала";
+              popupContent += `
+                            <div style="font-size: 12px; color: #444; margin-top: 6px;">
+                                Правый тоннель (Горьковская → Свободы):
+                                <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                                    ${statusText}, план: ${t.total} колец
+                                </div>
+                            </div>
+                        `;
+            }
+
+            if (station.tunnelInfo.toSvobody) {
+              const t = station.tunnelInfo.toSvobody;
+              popupContent += `
+                            <div style="font-size: 12px; color: #444; margin-top: 6px;">
+                                Тоннели до «Площади Свободы»:
+                                <div style="font-size: 11px; color: #4caf50; margin-top: 2px; font-weight: 600;">
+                                    ✅ Построены (2 из 2)
+                                </div>
+                            </div>
+                        `;
+            }
+          }
+
+          popupContent += `<div class="popup-year">Ожидаемый год открытия: ${station.year || "—"}</div>`;
+          popupContent += `<div class="popup-note">Данные на сентябрь 2026 г.</div>`;
         }
 
         marker.bindPopup(popupContent, { className: "station-popup" });
         createdMarkers[station.name] = marker;
       }
 
-      // Рисуем линии (только для действующих)
+      // ============================================================
+      // ВИЗУАЛИЗАЦИЯ ТОННЕЛЕЙ
+      // ============================================================
+
+      // Координаты для маршрута тоннеля
+      const gorkovskaya = [56.31389, 43.995];
+      const parkKulibina = [56.31406, 44.00865]; // примерная точка у парка Кулибина
+      const svobody = [56.31752, 44.01665];
+      const sennaya = [56.32237, 44.03726];
+
+      // 1. Построенные тоннели между «Сенной» и «Площадью Свободы» (уже готовы)
+      L.polyline([svobody, sennaya], {
+        color: "#4caf50",
+        weight: 4,
+        opacity: 0.8,
+        dashArray: "1, 0",
+      })
+        .addTo(map)
+        .bindPopup(
+          "Тоннели между «Сенной» и «Площадью Свободы» — построены ✅",
+        );
+
+      // 2. Левый тоннель «Горьковская» → «Пл. Свободы»: пройденный участок (сплошная линия)
+      L.polyline([gorkovskaya, parkKulibina], {
+        color: "#ff9800",
+        weight: 5,
+        opacity: 0.9,
+      })
+        .addTo(map)
+        .bindPopup("Левый тоннель: пройдено 270 из 485 колец (56%)");
+
+      // 3. Левый тоннель «Горьковская» → «Пл. Свободы»: оставшийся участок (пунктир)
+      L.polyline([parkKulibina, svobody], {
+        color: "#ff9800",
+        weight: 3,
+        opacity: 0.5,
+        dashArray: "10, 10",
+      })
+        .addTo(map)
+        .bindPopup("Левый тоннель: оставшийся участок до «Площади Свободы»");
+
+      // 4. Правый тоннель (параллельный, пунктир)
+      L.polyline([gorkovskaya, svobody], {
+        color: "#0066cc",
+        weight: 2,
+        opacity: 0.4,
+        dashArray: "5, 10",
+      })
+        .addTo(map)
+        .bindPopup("Правый тоннель: проходка начата щитом «Алёна»");
+
+      // Рисуем действующие линии метро
       lines
         .filter((l) => l.name !== "Строящиеся станции")
         .forEach((line) => {
@@ -370,17 +489,30 @@
         });
       });
 
-      // Статистика в консоли
-      const totalStations = 15;
-      const openStations = 15;
-      const buildingStations = 3;
+      // ============================================================
+      // СТАТИСТИКА
+      // ============================================================
+      console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА ===");
+      console.log("Действующие линии:");
+      console.log("  • Автозаводская (красная) — 11 станций");
+      console.log("  • Сормовско-Мещерская (синяя) — 5 станций");
+      console.log("  • Пересадка: «Московская» (кроссплатформенная)");
+      console.log("");
+      console.log("Строительство:");
       console.log(
-        `Всего станций (действующих): ${totalStations}, работает: ${openStations}, строится: ${buildingStations}`,
+        "  • Левый тоннель (Горьковская → Пл. Свободы): 270/485 колец (56%)",
       );
       console.log(
-        "Линии: Автозаводская (красная, 11 станций), Сормовско-Мещерская (синяя, 5 станций)",
+        "  • Правый тоннель (Горьковская → Пл. Свободы): проходка начата (июль 2026)",
       );
-      console.log("Пересадка: «Московская» (кроссплатформенная)");
+      console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2)");
+      console.log(
+        "  • Станции «Пл. Свободы» и «Сенная»: откроются в 2027 году",
+      );
+      console.log("");
+      console.log(
+        "Источник данных: новости от 11.09.2026 (щит «Евдокия» у парка Кулибина)",
+      );
     </script>
   </body>
 </html>
