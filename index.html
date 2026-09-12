@@ -870,6 +870,53 @@
       const ROUND_STYLE = { lineCap: "round", lineJoin: "round" };
       const SMOOTH_SAMPLES = 16;
 
+      // ============================================================
+      // АДАПТИВНАЯ ТОЛЩИНА МАРШРУТОВ
+      // Чем ближе приближение — тем заметнее линии.
+      // ============================================================
+      const ROUTE_BASE_ZOOM = 13; // зум, на котором толщина = базовой
+      const routeLayers = []; // { layer, baseWeight, baseOpacity, kind }
+
+      // Отдельный слой (pane) для белых обводок: они всегда остаются
+      // ПОД цветными линиями, даже когда становятся толще.
+      map.createPane("routeCasing");
+      map.getPane("routeCasing").style.zIndex = 390;
+
+      function registerRouteLayer(layer, baseWeight, baseOpacity, kind) {
+        routeLayers.push({ layer, baseWeight, baseOpacity, kind });
+      }
+
+      // Плавный рост толщины: z13 → ×1.0, z18 → ×2.0
+      function routeZoomFactor(zoom) {
+        const extra = Math.max(0, zoom - ROUTE_BASE_ZOOM);
+        return Math.min(2, 1 + extra * 0.2);
+      }
+
+      function updateRouteWeights() {
+        const zoom = map.getZoom();
+        const f = routeZoomFactor(zoom);
+        const extra = Math.max(0, zoom - ROUTE_BASE_ZOOM);
+
+        routeLayers.forEach(({ layer, baseWeight, baseOpacity, kind }) => {
+          const weight =
+            kind === "casing" ? baseWeight * f + 4 : baseWeight * f;
+
+          const style = { weight };
+
+          // Полупрозрачные (строящиеся) участки при приближении
+          // становятся чётче, но остаются пунктирными.
+          if (baseOpacity != null && baseOpacity < 1) {
+            const boost = Math.min(0.6, extra * 0.15);
+            style.opacity = Math.min(
+              1,
+              baseOpacity + (1 - baseOpacity) * boost,
+            );
+          }
+
+          layer.setStyle(style);
+        });
+      }
+
       /**
        * Рисует полилинию с белой обводкой.
        * Сначала добавляется более толстая белая линия (каширование),
@@ -879,21 +926,27 @@
       function addCasedPolyline(path, options) {
         if (!path || path.length < 2) return null;
         const weight = options.weight || 5;
+        const opacity = options.opacity != null ? options.opacity : 1;
         const outlineWeight = weight + 4;
 
-        // Белая обводка (снизу)
-        L.polyline(path, {
+        // Белая обводка (в отдельном pane — всегда под цветными линиями)
+        const casing = L.polyline(path, {
+          pane: "routeCasing",
           color: "#ffffff",
           weight: outlineWeight,
           opacity: 0.95,
           ...ROUND_STYLE,
         }).addTo(map);
+        registerRouteLayer(casing, weight, 0.95, "casing");
 
         // Цветная линия (сверху)
-        return L.polyline(path, {
+        const main = L.polyline(path, {
           ...ROUND_STYLE,
           ...options,
         }).addTo(map);
+        registerRouteLayer(main, weight, opacity, "main");
+
+        return main;
       }
 
       const shieldIcon = L.divIcon({
@@ -1045,6 +1098,12 @@
           createMarker(station, line.color);
         });
       });
+
+      // ============================================================
+      // АДАПТАЦИЯ ТОЛЩИНЫ МАРШРУТОВ К МАСШТАБУ
+      // ============================================================
+      map.on("zoomend", updateRouteWeights);
+      updateRouteWeights();
 
       // ============================================================
       // СТАТИСТИКА (в консоль)
