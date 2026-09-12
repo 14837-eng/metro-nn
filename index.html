@@ -182,9 +182,18 @@
             { name: "Горьковская", lat: 56.31389, lng: 43.995, status: "open" },
             {
               name: "Московская",
-              lat: 56.32139,
-              lng: 43.94528,
+              lat: 56.321013,
+              lng: 43.948439,
               status: "open",
+              // Промежуточные точки между «Горьковской» и «Московской»
+              // (порядок — от «Горьковской» к «Московской»)
+              viaBefore: [
+                [56.312466, 43.985568],
+                [56.317124, 43.970363],
+                [56.318297, 43.966882],
+                [56.322347, 43.956084],
+                [56.321664, 43.951322],
+              ],
             },
             {
               name: "Чкаловская",
@@ -246,8 +255,8 @@
             },
             {
               name: "Московская",
-              lat: 56.32139,
-              lng: 43.94528,
+              lat: 56.322485,
+              lng: 43.954706,
               status: "open",
             },
             { name: "Стрелка", lat: 56.33529, lng: 43.94956, status: "open" },
@@ -428,6 +437,20 @@
       }
 
       // ============================================================
+      // СБОРКА ПОЛИЛИНИИ ЛИНИИ С УЧЁТОМ viaBefore У СТАНЦИЙ
+      // ============================================================
+      function buildLinePath(line) {
+        const pts = [];
+        line.stations.forEach((s, i) => {
+          if (i > 0 && Array.isArray(s.viaBefore)) {
+            s.viaBefore.forEach((p) => pts.push(p));
+          }
+          pts.push([s.lat, s.lng]);
+        });
+        return pts;
+      }
+
+      // ============================================================
       // ГЕОМЕТРИЯ
       // ============================================================
       function pointAlong(from, to, t) {
@@ -474,7 +497,6 @@
       // Сглаживание ломаной сплайном Catmull-Rom.
       // Кривая проходит точно через все исходные точки,
       // но между ними — плавный изгиб вместо углов.
-      // samplesPerSegment — сколько точек на каждый сегмент.
       // ------------------------------------------------------------
       function catmullRom(p0, p1, p2, p3, t) {
         const t2 = t * t;
@@ -495,7 +517,6 @@
 
       function smoothPath(path, samplesPerSegment = 16) {
         if (!path || path.length < 3) return path;
-        // дублируем концы, чтобы кривая «входила» и «выходила» плавно
         const pts = [path[0], ...path, path[path.length - 1]];
         const result = [];
         for (let i = 1; i < pts.length - 2; i++) {
@@ -588,7 +609,6 @@
       };
 
       // Сколько подточек добавлять на каждый сегмент при сглаживании.
-      // Больше — плавнее, но тяжелее. 16 — оптимум.
       const SMOOTH_SAMPLES = 16;
 
       const tunnels = [
@@ -648,17 +668,13 @@
         let path = buildTunnelPath(t);
         if (!path) return;
 
-        // 1. Смещение (для параллельного тоннеля) — до сглаживания
         if (t.offset) path = offsetPath(path, t.offset);
-
-        // 2. Сглаживание — Catmull-Rom, чтобы повороты были плавными
         path = smoothPath(path, SMOOTH_SAMPLES);
 
         const percent = t.progress
           ? Math.round((t.progress.done / t.progress.total) * 100)
           : 0;
 
-        // Полностью построенный тоннель
         if (t.complete) {
           L.polyline(path, {
             color: t.color,
@@ -671,7 +687,6 @@
           return;
         }
 
-        // Тоннель в процессе проходки
         if (t.progress) {
           const t01 = t.progress.done / t.progress.total;
           const { done, rest } = splitPath(path, t01);
@@ -711,7 +726,6 @@
           return;
         }
 
-        // Проходка только начата — пунктир по всей трассе
         if (t.started) {
           const shieldPart = t.shield ? `щитом «${t.shield.name}» ` : "";
           const totalPart = t.total ? `, план: ${t.total} колец` : "";
@@ -729,11 +743,11 @@
         }
       });
 
-      // Рисуем действующие линии метро (тоже со сглаживанием и скруглением)
+      // Рисуем действующие линии метро (со сглаживанием и скруглением)
       lines
         .filter((l) => l.name !== "Строящиеся станции")
         .forEach((line) => {
-          const control = line.stations.map((s) => [s.lat, s.lng]);
+          const control = buildLinePath(line);
           const smooth = smoothPath(control, SMOOTH_SAMPLES);
           L.polyline(smooth, {
             color: line.color,
