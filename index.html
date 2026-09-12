@@ -62,9 +62,6 @@
       .dot.gray {
         background: #9e9e9e;
       }
-      .dot.blue {
-        background: #0066cc;
-      }
       #map {
         width: 100vw;
         height: calc(100vh - 60px);
@@ -73,9 +70,12 @@
         border-radius: 12px;
         padding: 4px;
       }
+      /* Ширину задаёт Leaflet через опции minWidth/maxWidth */
       .station-popup .leaflet-popup-content {
         margin: 12px;
-        min-width: 320px;
+        max-height: 65vh;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
       .popup-title {
         font-size: 16px;
@@ -139,42 +139,73 @@
       .leaflet-popup-content {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
-      /* Блок этапов строительства */
-      .stage-list {
+
+      /* ===== Аккордеон ===== */
+      .accordion {
         margin-top: 10px;
-        font-size: 12px;
       }
-      .stage-section-title {
-        font-size: 12px;
-        font-weight: 700;
-        color: #555;
-        margin-top: 10px;
-        margin-bottom: 4px;
+      .acc-item {
+        border-bottom: 1px solid #f0f0f0;
       }
+      .acc-item:last-child {
+        border-bottom: none;
+      }
+      .acc-header {
+        cursor: pointer;
+        padding: 8px 10px;
+        font-weight: 600;
+        font-size: 12px;
+        color: #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+        background: #f7f8fa;
+        border-radius: 6px;
+        margin-top: 4px;
+        transition: background 0.15s;
+      }
+      .acc-header:hover {
+        background: #eef0f4;
+      }
+      .acc-header .arrow {
+        font-size: 9px;
+        color: #999;
+        transition: transform 0.2s;
+      }
+      .acc-item.open .acc-header .arrow {
+        transform: rotate(90deg);
+      }
+      .acc-body {
+        display: none;
+        padding: 8px 4px 4px 4px;
+      }
+      .acc-item.open .acc-body {
+        display: block;
+      }
+
+      /* ===== Этапы ===== */
       .stage-item {
         display: flex;
         align-items: flex-start;
         gap: 6px;
         padding: 4px 0;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f5f5f5;
       }
       .stage-item:last-child {
         border-bottom: none;
       }
       .stage-icon {
         flex-shrink: 0;
-        font-size: 13px;
+        font-size: 12px;
         line-height: 1.4;
       }
       .stage-text {
         color: #444;
         line-height: 1.4;
         flex: 1;
+        font-size: 12px;
       }
-      .stage-text strong {
-        color: #1a1a2e;
-      }
-      /* Мини-прогресс-бар внутри этапа «В работе» */
       .stage-progress-wrap {
         margin-top: 4px;
       }
@@ -222,6 +253,17 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+      // ===== Аккордеон =====
+      function toggleAcc(header) {
+        const item = header.parentElement;
+        const container = item.parentElement;
+        const wasOpen = item.classList.contains("open");
+        container
+          .querySelectorAll(".acc-item")
+          .forEach((i) => i.classList.remove("open"));
+        if (!wasOpen) item.classList.add("open");
+      }
+
       const map = L.map("map", {
         zoomControl: true,
         attributionControl: true,
@@ -233,9 +275,8 @@
       }).addTo(map);
 
       // ============================================================
-      // ДАННЫЕ О МЕТРО НИЖНЕГО НОВГОРОДА
+      // ДАННЫЕ
       // ============================================================
-
       const lines = [
         {
           name: "Автозаводская",
@@ -480,58 +521,117 @@
 
       const createdMarkers = {};
 
-      // НОВОЕ: рендер блока этапов с прогресс-барами для «В работе»
-      function buildStageBlock(stages) {
-        if (!stages) return "";
-        let html = '<div class="stage-list">';
+      // ===== Аккордеон этапов =====
+      function buildAccordion(stages, tunnelInfo) {
+        let html = '<div class="accordion">';
 
         if (stages.done && stages.done.length) {
-          html += '<div class="stage-section-title">✅ Выполнено</div>';
-          stages.done.forEach((item) => {
-            html += `<div class="stage-item">
-              <span class="stage-icon">✅</span>
-              <span class="stage-text">${item}</span>
-            </div>`;
-          });
+          html += `<div class="acc-item">
+            <div class="acc-header" onclick="toggleAcc(this)">
+              <span>✅ Выполнено (${stages.done.length})</span>
+              <span class="arrow">▶</span>
+            </div>
+            <div class="acc-body">
+              ${stages.done
+                .map(
+                  (item) => `<div class="stage-item">
+                    <span class="stage-icon">✅</span>
+                    <span class="stage-text">${item}</span>
+                  </div>`,
+                )
+                .join("")}
+            </div>
+          </div>`;
         }
 
         if (stages.current && stages.current.length) {
-          html += '<div class="stage-section-title">🔄 В работе</div>';
-          stages.current.forEach((item) => {
-            // Поддержка как строк, так и объектов { text, progress }
-            const text = typeof item === "string" ? item : item.text;
-            const progress =
-              typeof item === "object" && item.progress != null
-                ? item.progress
-                : null;
-
-            html += `<div class="stage-item">
-              <span class="stage-icon">🔄</span>
-              <span class="stage-text">
-                ${text}
-                ${
-                  progress != null
-                    ? `<div class="stage-progress-wrap">
-                         <div class="stage-progress-container">
-                           <div class="stage-progress-fill" style="width:${progress}%"></div>
-                         </div>
-                         <div class="stage-progress-text">${progress}%</div>
-                       </div>`
-                    : ""
-                }
-              </span>
-            </div>`;
-          });
+          html += `<div class="acc-item open">
+            <div class="acc-header" onclick="toggleAcc(this)">
+              <span>🔄 В работе (${stages.current.length})</span>
+              <span class="arrow">▶</span>
+            </div>
+            <div class="acc-body">
+              ${stages.current
+                .map((item) => {
+                  const text = typeof item === "string" ? item : item.text;
+                  const progress =
+                    typeof item === "object" && item.progress != null
+                      ? item.progress
+                      : null;
+                  return `<div class="stage-item">
+                    <span class="stage-icon">🔄</span>
+                    <span class="stage-text">
+                      ${text}
+                      ${
+                        progress != null
+                          ? `<div class="stage-progress-wrap">
+                              <div class="stage-progress-container">
+                                <div class="stage-progress-fill" style="width:${progress}%"></div>
+                              </div>
+                              <div class="stage-progress-text">${progress}%</div>
+                            </div>`
+                          : ""
+                      }
+                    </span>
+                  </div>`;
+                })
+                .join("")}
+            </div>
+          </div>`;
         }
 
         if (stages.remaining && stages.remaining.length) {
-          html += '<div class="stage-section-title">📋 Предстоит</div>';
-          stages.remaining.forEach((item) => {
-            html += `<div class="stage-item">
-              <span class="stage-icon">📋</span>
-              <span class="stage-text">${item}</span>
+          html += `<div class="acc-item">
+            <div class="acc-header" onclick="toggleAcc(this)">
+              <span>📋 Предстоит (${stages.remaining.length})</span>
+              <span class="arrow">▶</span>
+            </div>
+            <div class="acc-body">
+              ${stages.remaining
+                .map(
+                  (item) => `<div class="stage-item">
+                    <span class="stage-icon">📋</span>
+                    <span class="stage-text">${item}</span>
+                  </div>`,
+                )
+                .join("")}
+            </div>
+          </div>`;
+        }
+
+        if (tunnelInfo) {
+          let tHtml = "";
+          if (tunnelInfo.left) {
+            const t = tunnelInfo.left;
+            tHtml += `<div class="stage-text" style="margin-bottom:6px;">
+              Левый тоннель (Горьковская → Свободы):
+              <div class="stage-progress-container" style="margin-top:3px;">
+                <div class="stage-progress-fill" style="width:${t.percent}%"></div>
+              </div>
+              <div class="stage-progress-text">${t.done} / ${t.total} колец (${t.percent}%)</div>
             </div>`;
-          });
+          }
+          if (tunnelInfo.right) {
+            const t = tunnelInfo.right;
+            const statusText = t.started ? "проходка начата" : "ожидает начала";
+            tHtml += `<div class="stage-text" style="margin-bottom:6px;">
+              Правый тоннель (Горьковская → Свободы):
+              <div style="font-size:11px; color:#666; margin-top:2px;">${statusText}, план: ${t.total} колец</div>
+            </div>`;
+          }
+          if (tunnelInfo.toSvobody) {
+            tHtml += `<div class="stage-text">
+              Тоннели до «Площади Свободы»:
+              <div style="font-size:11px; color:#4caf50; margin-top:2px; font-weight:600;">✅ Построены (2 из 2)</div>
+            </div>`;
+          }
+          html += `<div class="acc-item">
+            <div class="acc-header" onclick="toggleAcc(this)">
+              <span>🛠️ Проходка тоннелей</span>
+              <span class="arrow">▶</span>
+            </div>
+            <div class="acc-body">${tHtml}</div>
+          </div>`;
         }
 
         html += "</div>";
@@ -589,7 +689,7 @@
                 `;
 
           if (station.stages) {
-            popupContent += buildStageBlock(station.stages);
+            popupContent += buildAccordion(station.stages, station.tunnelInfo);
           }
 
           if (station.detail) {
@@ -604,12 +704,17 @@
           popupContent += `<div class="popup-note">Данные на сентябрь 2026 г.</div>`;
         }
 
-        marker.bindPopup(popupContent, { className: "station-popup" });
+        // ВАЖНО: ширину задаём через опции Leaflet, а не через CSS
+        marker.bindPopup(popupContent, {
+          className: "station-popup",
+          minWidth: 320,
+          maxWidth: 380,
+        });
         createdMarkers[station.name] = marker;
       }
 
       // ============================================================
-      // ЕДИНЫЙ ИСТОЧНИК КООРДИНАТ
+      // КООРДИНАТЫ
       // ============================================================
       const stationCoords = {};
       lines.forEach((line) =>
@@ -624,9 +729,6 @@
         return c;
       }
 
-      // ============================================================
-      // СБОРКА ПОЛИЛИНИИ
-      // ============================================================
       function buildLinePath(line) {
         const pts = [];
         line.stations.forEach((s, i) => {
@@ -939,7 +1041,7 @@
       });
 
       // ============================================================
-      // СТАТИСТИКА И ПЕРСПЕКТИВЫ
+      // СТАТИСТИКА
       // ============================================================
       console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА ===");
       console.log("Действующие линии:");
@@ -955,37 +1057,6 @@
         "  • Правый тоннель (Горьковская → Пл. Свободы): проходка начата (2026)",
       );
       console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2, 100%)");
-      console.log("");
-      console.log("Станция «Площадь Свободы» (40%):");
-      console.log(
-        "  ✅ Тоннели от «Сенной», подготовка котлована на ул. Горького",
-      );
-      console.log(
-        "  🔄 Каркас — 45% | Обвязочная балка — 60% | Левый тоннель — 56%",
-      );
-      console.log(
-        "  📋 Правый тоннель, вестибюли, отделка, инженерные системы",
-      );
-      console.log("");
-      console.log("Станция «Сенная» (35%):");
-      console.log("  ✅ Тоннели до «Пл. Свободы», фундамент, монолитные стены");
-      console.log(
-        "  🔄 Перекрытия — 30% | Котлован под ул. Горького — 20% | Обвязочная балка — 55%",
-      );
-      console.log(
-        "  📋 Подземные пути, отделка, инженерные системы, благоустройство",
-      );
-      console.log("");
-      console.log("Станция «Сормовская» (5%):");
-      console.log(
-        "  ✅ Изъято 627 из 726 объектов (85%), отключение коммуникаций",
-      );
-      console.log(
-        "  🔄 Расчистка — 40% | Перенос сетей — 25% | Снос гаражей — 30%",
-      );
-      console.log(
-        "  📋 Этапы 2–8: расчистка, камеры щитов, тоннели, станция, благоустройство",
-      );
       console.log("");
       console.log("Перспективы развития:");
       console.log(
