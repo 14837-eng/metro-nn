@@ -14,23 +14,46 @@
         padding: 0;
         box-sizing: border-box;
       }
+
+      html {
+        height: 100%;
+        -webkit-text-size-adjust: 100%;
+      }
+
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
       }
+
+      @supports (height: 100dvh) {
+        body {
+          height: 100dvh;
+        }
+      }
+
+      /* ===================== HEADER ===================== */
       #header {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         color: white;
-        padding: 16px 24px;
+        padding: 14px 24px;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
         position: relative;
         z-index: 1000;
+        flex: 0 0 auto;
       }
       #header h1 {
         font-size: 22px;
         font-weight: 600;
+        line-height: 1.25;
       }
       #header .subtitle {
         font-size: 13px;
@@ -41,17 +64,20 @@
         display: flex;
         gap: 20px;
         font-size: 13px;
+        flex-wrap: wrap;
       }
       #legend .item {
         display: flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
       }
       .dot {
         width: 12px;
         height: 12px;
         border-radius: 50%;
         display: inline-block;
+        flex-shrink: 0;
       }
       .dot.green {
         background: #4caf50;
@@ -62,16 +88,46 @@
       .dot.gray {
         background: #9e9e9e;
       }
-      #map {
-        width: 100vw;
-        height: calc(100vh - 60px);
+
+      /* ===================== MAP ===================== */
+      .map-container {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
       }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+      .footer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: #1b2039;
+        z-index: 10000;
+        pointer-events: none;
+      }
+
+      /* ===================== ZOOM CONTROL: СЕРЕДИНА СПРАВА ===================== */
+      /* Сдвигаем весь правый верхний контейнер контролов в вертикальный центр карты.
+         Так как в нём только zoom-контрол — это безопасно. */
+      .leaflet-top.leaflet-right {
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      /* ===================== POPUPS ===================== */
       .station-popup .leaflet-popup-content-wrapper {
         border-radius: 12px;
         padding: 4px;
       }
       .station-popup .leaflet-popup-content {
         margin: 10px 12px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
       .popup-title {
         font-size: 15px;
@@ -132,10 +188,19 @@
         border-top: 1px solid #eee;
         padding-top: 6px;
       }
+      .popup-outlook {
+        font-size: 11px;
+        color: #444;
+        margin-top: 6px;
+        padding: 6px 8px;
+        background: #f5f5f5;
+        border-radius: 6px;
+      }
       .leaflet-popup-content {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
 
+      /* ===================== ACCORDION ===================== */
       .accordion {
         margin-top: 8px;
       }
@@ -147,26 +212,32 @@
       }
       .acc-header {
         cursor: pointer;
-        padding: 7px 10px;
+        padding: 8px 10px;
         font-weight: 600;
         font-size: 12px;
         color: #333;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 8px;
         user-select: none;
         background: #f7f8fa;
         border-radius: 6px;
         margin-top: 4px;
+        min-height: 36px;
         transition: background 0.15s;
       }
       .acc-header:hover {
         background: #eef0f4;
       }
+      .acc-header:active {
+        background: #e6e9ef;
+      }
       .acc-header .arrow {
         font-size: 9px;
         color: #999;
         transition: transform 0.2s;
+        flex-shrink: 0;
       }
       .acc-item.open .acc-header .arrow {
         transform: rotate(90deg);
@@ -199,6 +270,7 @@
         line-height: 1.4;
         flex: 1;
         font-size: 12px;
+        word-break: break-word;
       }
       .stage-text a.stage-link {
         color: #1a73e8;
@@ -237,25 +309,137 @@
         margin-top: 2px;
         text-align: right;
       }
-      .popup-outlook {
-        font-size: 11px;
-        color: #444;
-        margin-top: 6px;
-        padding: 6px 8px;
-        background: #f5f5f5;
-        border-radius: 6px;
+
+      /* ===================== АДАПТИВ ===================== */
+
+      /* Планшеты */
+      @media (max-width: 900px) {
+        #header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 12px 16px;
+        }
+        #legend {
+          gap: 8px 18px;
+        }
       }
-      .map-container {
-        position: relative;
+
+      /* Телефоны */
+      @media (max-width: 600px) {
+        #header {
+          padding: 10px 12px;
+          gap: 8px;
+        }
+        #header h1 {
+          font-size: 17px;
+        }
+        #header .subtitle {
+          font-size: 11px;
+          opacity: 0.65;
+        }
+        #legend {
+          width: 100%;
+          font-size: 12px;
+          gap: 6px 14px;
+        }
+        .dot {
+          width: 10px;
+          height: 10px;
+        }
+
+        /* Попапы занимают почти всю ширину экрана */
+        .leaflet-popup-content-wrapper {
+          border-radius: 10px;
+        }
+        .station-popup .leaflet-popup-content {
+          margin: 8px 10px;
+        }
+        .popup-title {
+          font-size: 14px;
+        }
+        .popup-line,
+        .popup-note,
+        .popup-outlook,
+        .popup-year {
+          font-size: 11px;
+        }
+
+        /* Крупнее тап-зоны в аккордеоне */
+        .acc-header {
+          padding: 10px 10px;
+          font-size: 12.5px;
+          min-height: 40px;
+        }
+        .stage-text {
+          font-size: 11.5px;
+        }
+        .stage-item {
+          padding: 5px 0;
+        }
+
+        /* Кнопка закрытия попапа — крупнее */
+        .leaflet-container a.leaflet-popup-close-button {
+          width: 28px;
+          height: 28px;
+          line-height: 28px;
+          font-size: 20px;
+          padding: 0;
+          right: 4px;
+          top: 4px;
+        }
+
+        /* Чуть сдвигаем зум-контрол от края на мобильных */
+        .leaflet-top.leaflet-right {
+          right: 4px;
+        }
       }
-      .footer {
-        position: absolute;
-        bottom: 0px;
-        left: 0px;
-        right: 0px;
-        height: 40px;
-        background: #1b2039;
-        z-index: 10000;
+
+      /* Узкие телефоны */
+      @media (max-width: 400px) {
+        #header h1 {
+          font-size: 15px;
+        }
+        #header .subtitle {
+          font-size: 10px;
+        }
+        #legend {
+          font-size: 11px;
+          gap: 4px 10px;
+        }
+        .acc-header {
+          font-size: 12px;
+        }
+      }
+
+      /* Ландшафт на телефоне — экономим вертикаль */
+      @media (max-height: 500px) and (orientation: landscape) {
+        #header {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 12px;
+          gap: 12px;
+        }
+        #header h1 {
+          font-size: 15px;
+        }
+        #header .subtitle {
+          display: none;
+        }
+        #legend {
+          width: auto;
+          font-size: 11px;
+          gap: 10px;
+        }
+      }
+
+      /* Уважаем настройку «уменьшить движение» */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
       }
     </style>
   </head>
@@ -314,6 +498,37 @@
         sormovskaya_finance: "https://fedpress.ru/news/52/society/3438755",
       };
 
+      // ============================================================
+      // РАЗМЕРЫ ПОПАПОВ (адаптив)
+      // ============================================================
+      const BASE_POPUP_MIN = 320;
+      const BASE_POPUP_MAX = 380;
+
+      function getPopupSizes() {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        const maxWidth = Math.max(220, Math.min(BASE_POPUP_MAX, vw - 48));
+        const minWidth = Math.min(BASE_POPUP_MIN, maxWidth);
+
+        const isSmall = vw <= 768;
+        const maxHeight = isSmall ? Math.max(180, Math.round(vh * 0.6)) : 0;
+
+        return { minWidth, maxWidth, maxHeight };
+      }
+
+      function refreshOpenPopup() {
+        const popup = map && map._popup;
+        if (!popup) return;
+        try {
+          if (typeof popup._updateLayout === "function") popup._updateLayout();
+          if (typeof popup._updatePosition === "function")
+            popup._updatePosition();
+        } catch (e) {
+          /* игнорируем — попап мог быть уже закрыт */
+        }
+      }
+
       function toggleAcc(header) {
         const item = header.parentElement;
         const container = item.parentElement;
@@ -322,12 +537,21 @@
           .querySelectorAll(".acc-item")
           .forEach((i) => i.classList.remove("open"));
         if (!wasOpen) item.classList.add("open");
+
+        requestAnimationFrame(refreshOpenPopup);
       }
 
+      // ============================================================
+      // КАРТА
+      // zoomControl отключён — добавляем вручную в topright,
+      // а CSS сдвигает его в вертикальный центр правой стороны.
+      // ============================================================
       const map = L.map("map", {
-        zoomControl: true,
+        zoomControl: false,
         attributionControl: true,
       }).setView([56.31, 43.97], 13);
+
+      L.control.zoom({ position: "topright" }).addTo(map);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
@@ -846,10 +1070,13 @@
           popupContent += `<div class="popup-note">Данные на сентябрь 2026 г.</div>`;
         }
 
+        const sizes = getPopupSizes();
+
         marker.bindPopup(popupContent, {
           className: "station-popup",
-          minWidth: 320,
-          maxWidth: 380,
+          minWidth: sizes.minWidth,
+          maxWidth: sizes.maxWidth,
+          maxHeight: sizes.maxHeight,
           autoPan: true,
           autoPanPadding: [20, 20],
         });
@@ -1013,7 +1240,6 @@
 
       // ============================================================
       // СМЕЩЕНИЕ ТОННЕЛЕЙ ОТНОСИТЕЛЬНО ОСЕВОЙ ЛИНИИ
-      // Чем меньше значение — тем ближе тоннели друг к другу.
       // ============================================================
       const TUNNEL_OFFSET_METERS = 6;
 
@@ -1093,13 +1319,7 @@
       });
 
       // ============================================================
-      // ТОННЕЛИ (актуализировано на 13.09.2026)
-      //
-      // ВАЖНО: offsetLine при положительном значении смещает линию
-      // ВЛЕВО относительно направления from → to.
-      // Поэтому:
-      //   левый тоннель  → +TUNNEL_OFFSET_METERS
-      //   правый тоннель → -TUNNEL_OFFSET_METERS
+      // ТОННЕЛИ
       // ============================================================
       const tunnels = [
         {
@@ -1121,7 +1341,6 @@
           weight: 2,
           offset: -TUNNEL_OFFSET_METERS,
           started: true,
-          // Данных о прогрессе нет — щит «Алёна» начал проходку, но точное число колец не публиковалось
           progress: { done: 0, total: 486 },
           shield: { name: "Алёна", atEnd: true },
           label: "Правый тоннель (Горьковская → Пл. Свободы)",
@@ -1242,27 +1461,32 @@
       map.on("zoomend", updateRouteWeights);
       updateRouteWeights();
 
-      console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА (данные на 13.09.2026) ===");
-      console.log("Действующие линии:");
-      console.log("  • Автозаводская (красная) — 11 станций");
-      console.log("  • Сормовско-Мещерская (синяя) — 5 станций");
-      console.log("  • Пересадка: «Московская» (кроссплатформенная)");
-      console.log("");
-      console.log("Строительство:");
-      console.log(
-        "  • Левый тоннель (Горьковская → Пл. Свободы): 270/485 колец (56%) — щит «Евдокия»",
-      );
-      console.log(
-        "  • Правый тоннель (Горьковская → Пл. Свободы): проходка начата, данных о прогрессе нет — щит «Алёна»",
-      );
-      console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2, 100%)");
-      console.log("");
-      console.log("Актуализированные проценты прогресса (13.09.2026):");
-      console.log("  • Площадь Свободы: 25% (обвязочная балка завершена)");
-      console.log(
-        "  • Сенная: 35% (стены и обвязочная балка готовы, идут перекрытия 65%)",
-      );
-      console.log("  • Сормовская: 12% (изъято 93% объектов, снос гаражей)");
+      // ============================================================
+      // АДАПТИВ: пересчёт попапов при изменении размеров окна
+      // ============================================================
+      function updatePopupSizes() {
+        const sizes = getPopupSizes();
+        Object.values(createdMarkers).forEach((marker) => {
+          const popup = marker.getPopup();
+          if (!popup) return;
+          popup.options.minWidth = sizes.minWidth;
+          popup.options.maxWidth = sizes.maxWidth;
+          popup.options.maxHeight = sizes.maxHeight;
+        });
+        refreshOpenPopup();
+      }
+
+      let resizeTimer = null;
+      function onViewportChange() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          updatePopupSizes();
+          map.invalidateSize();
+        }, 150);
+      }
+
+      window.addEventListener("resize", onViewportChange);
+      window.addEventListener("orientationchange", onViewportChange);
     </script>
   </body>
 </html>
