@@ -426,7 +426,7 @@
               line: "Автозаводская",
               tunnelInfo: {
                 left: { done: 270, total: 485, percent: 56 },
-                right: { done: 60, total: 486, percent: 12, started: true },
+                right: { done: 0, total: 486, percent: 0, started: true },
               },
               stages: {
                 done: [
@@ -459,8 +459,8 @@
                     src: "evdokia_50",
                   },
                   {
-                    text: "Проходка правого тоннеля от «Горьковской» (щит «Алёна»): ~60 из 486 колец",
-                    progress: 12,
+                    text: "Проходка правого тоннеля от «Горьковской» (щит «Алёна»): начата, данных о прогрессе нет",
+                    progress: 0,
                     src: "alena_start",
                   },
                 ],
@@ -733,7 +733,9 @@
           if (tunnelInfo.right) {
             const t = tunnelInfo.right;
             const statusText = t.started
-              ? `пройдено ${t.done} из ${t.total} колец`
+              ? t.done > 0
+                ? `пройдено ${t.done} из ${t.total} колец`
+                : "проходка начата, данных о прогрессе нет"
               : "ожидает начала";
             const rightProgress = t.percent != null ? t.percent : 0;
             tHtml += `<div class="stage-text" style="margin-bottom:6px;">
@@ -741,7 +743,7 @@
               <div class="stage-progress-container" style="margin-top:3px;">
                 <div class="stage-progress-fill" style="width:${rightProgress}%"></div>
               </div>
-              <div class="stage-progress-text">${statusText} (${rightProgress}%) — щит «Алёна»</div>
+              <div class="stage-progress-text">${statusText} — щит «Алёна»</div>
             </div>`;
           }
           if (tunnelInfo.toSvobody) {
@@ -1091,7 +1093,8 @@
           weight: 2,
           offset: 18,
           started: true,
-          progress: { done: 60, total: 486 },
+          // Данных о прогрессе нет — щит «Алёна» начал проходку, но точное число колец не публиковалось
+          progress: { done: 0, total: 486 },
           shield: { name: "Алёна", atEnd: true },
           label: "Правый тоннель (Горьковская → Пл. Свободы)",
         },
@@ -1142,7 +1145,7 @@
           return;
         }
 
-        if (t.progress) {
+        if (t.progress && t.progress.done > 0) {
           const t01 = t.progress.done / t.progress.total;
           const { done, rest } = splitPath(path, t01);
           const donePoint = pointAlongPath(path, t01);
@@ -1177,15 +1180,16 @@
 
         if (t.started) {
           const shieldPart = t.shield ? `щитом «${t.shield.name}» ` : "";
-          const totalPart = t.total ? `, план: ${t.total} колец` : "";
+          const statusText =
+            t.progress && t.progress.done > 0
+              ? `Пройдено ${t.progress.done} из ${t.progress.total} колец`
+              : "Проходка начата, данных о прогрессе нет";
           addCasedPolyline(path, {
             color: t.color,
             weight: t.weight,
             opacity: 0.5,
             dashArray: "5, 8",
-          }).bindPopup(
-            `${t.label}<br>Проходка ${shieldPart}начата${totalPart}`,
-          );
+          }).bindPopup(`${t.label}<br>${statusText} (${shieldPart}начата)`);
         }
       });
 
@@ -1221,7 +1225,7 @@
         "  • Левый тоннель (Горьковская → Пл. Свободы): 270/485 колец (56%) — щит «Евдокия»",
       );
       console.log(
-        "  • Правый тоннель (Горьковская → Пл. Свободы): 60/486 колец (12%) — щит «Алёна»",
+        "  • Правый тоннель (Горьковская → Пл. Свободы): проходка начата, данных о прогрессе нет — щит «Алёна»",
       );
       console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2, 100%)");
       console.log("");
