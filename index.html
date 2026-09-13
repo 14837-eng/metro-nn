@@ -272,10 +272,13 @@
         svobody_kotlovan: "https://www.nnov.kp.ru/daily/277780/5245643/",
         svobody_kompleks:
           "https://strategy.nobl.ru/novosti/na-ploshhadi-svobodyi-pristupili-k-stroitelstvu-stanczionnogo-kompleksa-metro/",
+        svobody_beam_done:
+          "https://strategy.nobl.ru/novosti/na-ploshhadi-svobodyi-pristupili-k-stroitelstvu-stanczionnogo-kompleksa-metro/",
         evdokia_50:
           "https://nn.aif.ru/society/tonneleprohodcheskiy-shchit-evdokiya-preodolel-bolee-50-marshruta-v-nizhnem",
         evdokia_start:
           "https://nn.rbc.ru/nn/freenews/6a181c3a9a794725aba1c10e?from=main_lines_7",
+        alena_start: "https://nn.rbc.ru/nn/freenews/6a181c3a9a794725aba1c10e",
         vladimir_finish:
           "https://nn.rbc.ru/nn/freenews/6943cee19a79472d6e5d24a8?from=regional_newsfeed",
         sennaya_start: "https://nn.rbc.ru/nn/freenews/69789ad49a79470a0d1ceed5",
@@ -288,6 +291,9 @@
         sormovskaya_snos: "https://news.mail.ru/society/72236665/",
         sormovskaya_85:
           "https://pravda-nn.ru/news/izyato-uzhe-85-uchastkov-popadayushhih-v-zonu-stroitelstva-metro-v-sormove/",
+        sormovskaya_93:
+          "https://pravda-nn.ru/news/izyato-uzhe-85-uchastkov-popadayushhih-v-zonu-stroitelstva-metro-v-sormove/",
+        sormovskaya_garages: "https://news.mail.ru/society/72236665/",
         sormovskaya_finance: "https://fedpress.ru/news/52/society/3438755",
       };
 
@@ -312,7 +318,7 @@
       }).addTo(map);
 
       // ============================================================
-      // ДАННЫЕ
+      // ДАННЫЕ (актуализировано на 13.09.2026)
       // ============================================================
       const lines = [
         {
@@ -415,12 +421,12 @@
               lat: 56.31782,
               lng: 44.013717,
               status: "building",
-              progress: 10,
+              progress: 25,
               year: "август 2027",
               line: "Автозаводская",
               tunnelInfo: {
                 left: { done: 270, total: 485, percent: 56 },
-                right: { done: 0, total: 486, percent: 0, started: true },
+                right: { done: 60, total: 486, percent: 12, started: true },
               },
               stages: {
                 done: [
@@ -432,32 +438,40 @@
                     text: "Подготовка котлована на ул. Горького: вынуто 10 000 м³ земли, смонтировано 256 т металлоконструкций",
                     src: "svobody_kotlovan",
                   },
-                ],
-                current: [
                   {
-                    text: "Возведение монолитного железобетонного каркаса станционного комплекса (залит первый бетон — 11 м³ из 580 м³)",
-                    progress: 5,
+                    text: "Залит первый бетон станционного комплекса (11 м³ из 580 м³)",
                     src: "svobody_beton",
                   },
                   {
-                    text: "Монтаж обвязочной балки — основания станции",
-                    progress: 10,
-                    src: "svobody_kompleks",
+                    text: "Монтаж обвязочной балки завершён — основание станции готово",
+                    src: "svobody_beam_done",
+                  },
+                ],
+                current: [
+                  {
+                    text: "Возведение монолитного железобетонного каркаса станционного комплекса",
+                    progress: 25,
+                    src: "svobody_beton",
                   },
                   {
                     text: "Проходка левого тоннеля от «Горьковской» (щит «Евдокия»): 270 из 485 колец",
                     progress: 56,
                     src: "evdokia_50",
                   },
+                  {
+                    text: "Проходка правого тоннеля от «Горьковской» (щит «Алёна»): ~60 из 486 колец",
+                    progress: 12,
+                    src: "alena_start",
+                  },
                 ],
                 remaining: [
                   {
-                    text: "Завершение проходки правого тоннеля от «Горьковской» (щит «Алёна»)",
-                    src: "evdokia_start",
+                    text: "Завершение проходки левого тоннеля от «Горьковской» (щит «Евдокия»)",
+                    src: "evdokia_50",
                   },
                   {
-                    text: "Завершение проходки левого тоннеля от «Горьковской»",
-                    src: "evdokia_50",
+                    text: "Завершение проходки правого тоннеля от «Горьковской» (щит «Алёна»)",
+                    src: "alena_start",
                   },
                   {
                     text: "Устройство стен и перекрытий станционного комплекса (более 580 м³ бетона)",
@@ -475,7 +489,8 @@
               },
               detail:
                 "Строительство развёрнуто в котловане на глубине свыше 10 метров. " +
-                "Первый этап выполнен: залито 11 м³ бетона. Всего для железобетонных элементов потребуется более 580 м³. " +
+                "Обвязочная балка смонтирована, идёт возведение монолитного каркаса станции. " +
+                "Всего для железобетонных элементов потребуется более 580 м³. " +
                 "Работы сосредоточены в районе ул. Варварской — вблизи готовых тоннелей метро.",
               outlook:
                 "Пассажиропоток в верхнюю часть города вырастет до 12,5 млн человек в год. " +
@@ -486,7 +501,7 @@
               lat: 56.32237,
               lng: 44.03726,
               status: "building",
-              progress: 15,
+              progress: 35,
               year: "август 2027",
               line: "Автозаводская",
               tunnelInfo: {
@@ -495,7 +510,7 @@
               stages: {
                 done: [
                   {
-                    text: "Тоннели до «Площади Свободы» (2 из 2, ~1,5 км каждый)",
+                    text: "Тоннели до «Площади Свободы» (2 из 2, ~1,5 км каждый) ✅",
                     src: "vladimir_finish2",
                   },
                   {
@@ -503,25 +518,19 @@
                     src: "sennaya_start",
                   },
                   {
-                    text: "Возведение монолитных стен станции",
+                    text: "Возведение монолитных стен станции завершено",
+                    src: "sennaya_kompleks",
+                  },
+                  {
+                    text: "Обвязочная балка: 33 т арматуры, 600 м³ бетона — завершена",
                     src: "sennaya_kompleks",
                   },
                 ],
                 current: [
                   {
-                    text: "Сооружение перекрытий станционного комплекса",
-                    progress: 10,
+                    text: "Сооружение перекрытий станционного комплекса (с марта 2026)",
+                    progress: 65,
                     src: "sennaya_start",
-                  },
-                  {
-                    text: "Подготовка котлована под улицей Горького для подземных путей",
-                    progress: 20,
-                    src: "sennaya_kp",
-                  },
-                  {
-                    text: "Обвязочная балка: 33 т арматуры, 600 м³ бетона",
-                    progress: 15,
-                    src: "sennaya_kompleks",
                   },
                 ],
                 remaining: [
@@ -545,6 +554,7 @@
               },
               detail:
                 "Работы ведутся одновременно на поверхности и на глубине ~16 метров. " +
+                "Монолитные стены станции возведены, обвязочная балка готова, идёт устройство перекрытий. " +
                 "Строительство развернулось после положительного заключения Главгосэкспертизы (ноябрь 2025).",
               outlook:
                 "Продление Автозаводской линии станет драйвером развития площади Сенной. " +
@@ -555,14 +565,14 @@
               lat: 56.3522,
               lng: 43.8738,
               status: "building",
-              progress: 5,
-              year: "декабрь 2029",
+              progress: 12,
+              year: "2029 год",
               line: "Сормовско-Мещерская",
               stages: {
                 done: [
                   {
-                    text: "Изъято 627 из 726 объектов недвижимости (86%)",
-                    src: "sormovskaya_85",
+                    text: "Изъято 678 из 726 объектов недвижимости (93%)",
+                    src: "sormovskaya_93",
                   },
                   {
                     text: "Отключение всех сооружений от газа, электричества и воды",
@@ -585,9 +595,9 @@
                     src: "sormovskaya_clear",
                   },
                   {
-                    text: "Снос гаражей на ул. Станционной",
+                    text: "Снос гаражей на ул. Станционной (старт 01.09.2026)",
                     progress: 30,
-                    src: "sormovskaya_snos",
+                    src: "sormovskaya_garages",
                   },
                 ],
                 remaining: [
@@ -722,10 +732,16 @@
           }
           if (tunnelInfo.right) {
             const t = tunnelInfo.right;
-            const statusText = t.started ? "проходка начата" : "ожидает начала";
+            const statusText = t.started
+              ? `пройдено ${t.done} из ${t.total} колец`
+              : "ожидает начала";
+            const rightProgress = t.percent != null ? t.percent : 0;
             tHtml += `<div class="stage-text" style="margin-bottom:6px;">
               Правый тоннель (Горьковская → Свободы):
-              <div style="font-size:11px; color:#666; margin-top:2px;">${statusText}, план: ${t.total} колец</div>
+              <div class="stage-progress-container" style="margin-top:3px;">
+                <div class="stage-progress-fill" style="width:${rightProgress}%"></div>
+              </div>
+              <div class="stage-progress-text">${statusText} (${rightProgress}%) — щит «Алёна»</div>
             </div>`;
           }
           if (tunnelInfo.toSvobody) {
@@ -1053,6 +1069,9 @@
         iconAnchor: [8, 8],
       });
 
+      // ============================================================
+      // ТОННЕЛИ (актуализировано на 13.09.2026)
+      // ============================================================
       const tunnels = [
         {
           id: "left",
@@ -1072,8 +1091,8 @@
           weight: 2,
           offset: 18,
           started: true,
-          total: 486,
-          shield: { name: "Алёна" },
+          progress: { done: 60, total: 486 },
+          shield: { name: "Алёна", atEnd: true },
           label: "Правый тоннель (Горьковская → Пл. Свободы)",
         },
         {
@@ -1191,7 +1210,7 @@
       map.on("zoomend", updateRouteWeights);
       updateRouteWeights();
 
-      console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА ===");
+      console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА (данные на 13.09.2026) ===");
       console.log("Действующие линии:");
       console.log("  • Автозаводская (красная) — 11 станций");
       console.log("  • Сормовско-Мещерская (синяя) — 5 станций");
@@ -1199,17 +1218,19 @@
       console.log("");
       console.log("Строительство:");
       console.log(
-        "  • Левый тоннель (Горьковская → Пл. Свободы): 270/485 колец (56%)",
+        "  • Левый тоннель (Горьковская → Пл. Свободы): 270/485 колец (56%) — щит «Евдокия»",
       );
       console.log(
-        "  • Правый тоннель (Горьковская → Пл. Свободы): проходка начата (2026)",
+        "  • Правый тоннель (Горьковская → Пл. Свободы): 60/486 колец (12%) — щит «Алёна»",
       );
       console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2, 100%)");
       console.log("");
-      console.log("Скорректированные проценты прогресса (сентябрь 2026):");
-      console.log("  • Площадь Свободы: 10% (было 40%)");
-      console.log("  • Сенная: 15% (было 35%)");
-      console.log("  • Сормовская: 5% (без изменений)");
+      console.log("Актуализированные проценты прогресса (13.09.2026):");
+      console.log("  • Площадь Свободы: 25% (обвязочная балка завершена)");
+      console.log(
+        "  • Сенная: 35% (стены и обвязочная балка готовы, идут перекрытия 65%)",
+      );
+      console.log("  • Сормовская: 12% (изъято 93% объектов, снос гаражей)");
     </script>
   </body>
 </html>
