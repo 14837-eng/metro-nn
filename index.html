@@ -71,18 +71,15 @@
         padding: 4px;
       }
       .station-popup .leaflet-popup-content {
-        margin: 12px;
-        max-height: 65vh;
-        overflow-y: auto;
-        overflow-x: hidden;
+        margin: 10px 12px;
       }
       .popup-title {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
       .popup-line {
-        font-size: 13px;
+        font-size: 12px;
         color: #555;
         margin-bottom: 4px;
       }
@@ -90,10 +87,10 @@
         display: inline-block;
         padding: 3px 10px;
         border-radius: 20px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         color: white;
-        margin-top: 6px;
+        margin-top: 4px;
       }
       .popup-status.open {
         background: #4caf50;
@@ -105,7 +102,7 @@
         background: #9e9e9e;
       }
       .progress-bar-container {
-        margin-top: 10px;
+        margin-top: 8px;
         background: #e0e0e0;
         border-radius: 10px;
         height: 10px;
@@ -118,20 +115,20 @@
         transition: width 0.5s ease;
       }
       .progress-text {
-        font-size: 12px;
+        font-size: 11px;
         color: #666;
-        margin-top: 4px;
+        margin-top: 3px;
         text-align: right;
       }
       .popup-year {
-        font-size: 12px;
+        font-size: 11px;
         color: #888;
         margin-top: 6px;
       }
       .popup-note {
         font-size: 11px;
         color: #999;
-        margin-top: 8px;
+        margin-top: 6px;
         border-top: 1px solid #eee;
         padding-top: 6px;
       }
@@ -140,7 +137,7 @@
       }
 
       .accordion {
-        margin-top: 10px;
+        margin-top: 8px;
       }
       .acc-item {
         border-bottom: 1px solid #f0f0f0;
@@ -150,7 +147,7 @@
       }
       .acc-header {
         cursor: pointer;
-        padding: 8px 10px;
+        padding: 7px 10px;
         font-weight: 600;
         font-size: 12px;
         color: #333;
@@ -203,6 +200,23 @@
         flex: 1;
         font-size: 12px;
       }
+      .stage-text a.stage-link {
+        color: #1a73e8;
+        text-decoration: none;
+        border-bottom: 1px dotted rgba(26, 115, 232, 0.5);
+        transition:
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .stage-text a.stage-link:hover {
+        color: #0d47a1;
+        border-bottom-color: #0d47a1;
+      }
+      .stage-text a.stage-link .link-icon {
+        font-size: 9px;
+        opacity: 0.75;
+        margin-left: 2px;
+      }
       .stage-progress-wrap {
         margin-top: 4px;
       }
@@ -249,6 +263,34 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+      // ============================================================
+      // БАЗА ИСТОЧНИКОВ (используется только для ссылок в пунктах прогресса)
+      // ============================================================
+      const SOURCES = {
+        svobody_beton:
+          "https://strategy.nobl.ru/novosti/na-ploshhadi-svobodyi-pristupili-k-stroitelstvu-stanczionnogo-kompleksa-metro/",
+        svobody_kotlovan: "https://www.nnov.kp.ru/daily/277780/5245643/",
+        svobody_kompleks:
+          "https://strategy.nobl.ru/novosti/na-ploshhadi-svobodyi-pristupili-k-stroitelstvu-stanczionnogo-kompleksa-metro/",
+        evdokia_50:
+          "https://nn.aif.ru/society/tonneleprohodcheskiy-shchit-evdokiya-preodolel-bolee-50-marshruta-v-nizhnem",
+        evdokia_start:
+          "https://nn.rbc.ru/nn/freenews/6a181c3a9a794725aba1c10e?from=main_lines_7",
+        vladimir_finish:
+          "https://nn.rbc.ru/nn/freenews/6943cee19a79472d6e5d24a8?from=regional_newsfeed",
+        sennaya_start: "https://nn.rbc.ru/nn/freenews/69789ad49a79470a0d1ceed5",
+        sennaya_kompleks:
+          "https://mt.pravda-nn.ru/blog/43676099333/Stantsionnyiy-kompleks-metro-nachali-vozvodit-na-ploschadi-Senno",
+        sennaya_kp: "https://www.nnov.kp.ru/daily/277780/5245643/",
+        vladimir_finish2:
+          "https://kgembassy.ru/shit-vladimir-zavershil-svou-raboty-po-stroitelstvy-metro-v-nijnem-novgorode/",
+        sormovskaya_clear: "https://news.mail.ru/society/72237219/",
+        sormovskaya_snos: "https://news.mail.ru/society/72236665/",
+        sormovskaya_85:
+          "https://pravda-nn.ru/news/izyato-uzhe-85-uchastkov-popadayushhih-v-zonu-stroitelstva-metro-v-sormove/",
+        sormovskaya_finance: "https://fedpress.ru/news/52/society/3438755",
+      };
+
       function toggleAcc(header) {
         const item = header.parentElement;
         const container = item.parentElement;
@@ -373,8 +415,8 @@
               lat: 56.31782,
               lng: 44.013717,
               status: "building",
-              progress: 40,
-              year: "декабрь 2027",
+              progress: 10,
+              year: "август 2027",
               line: "Автозаводская",
               tunnelInfo: {
                 left: { done: 270, total: 485, percent: 56 },
@@ -382,35 +424,59 @@
               },
               stages: {
                 done: [
-                  "Проходка двух тоннелей от «Сенной» (щит «Владимир», ~1,5 км каждый)",
-                  "Подготовка котлована на ул. Горького: вынуто 10 000 м³ земли, смонтировано 256 т металлоконструкций",
-                  "Заливка бетонного основания котлована (более 70 спецмашин)",
+                  {
+                    text: "Проходка двух тоннелей от «Сенной» (щит «Владимир», ~1,5 км каждый)",
+                    src: "vladimir_finish",
+                  },
+                  {
+                    text: "Подготовка котлована на ул. Горького: вынуто 10 000 м³ земли, смонтировано 256 т металлоконструкций",
+                    src: "svobody_kotlovan",
+                  },
                 ],
                 current: [
                   {
-                    text: "Возведение монолитного железобетонного каркаса станционного комплекса",
-                    progress: 45,
+                    text: "Возведение монолитного железобетонного каркаса станционного комплекса (залит первый бетон — 11 м³ из 580 м³)",
+                    progress: 5,
+                    src: "svobody_beton",
                   },
                   {
                     text: "Монтаж обвязочной балки — основания станции",
-                    progress: 60,
+                    progress: 10,
+                    src: "svobody_kompleks",
                   },
                   {
                     text: "Проходка левого тоннеля от «Горьковской» (щит «Евдокия»): 270 из 485 колец",
                     progress: 56,
+                    src: "evdokia_50",
                   },
                 ],
                 remaining: [
-                  "Завершение проходки правого тоннеля от «Горьковской» (щит «Алёна»)",
-                  "Завершение проходки левого тоннеля от «Горьковской»",
-                  "Строительство пассажирских вестибюлей и внутренняя отделка",
-                  "Монтаж инженерных систем и благоустройство",
+                  {
+                    text: "Завершение проходки правого тоннеля от «Горьковской» (щит «Алёна»)",
+                    src: "evdokia_start",
+                  },
+                  {
+                    text: "Завершение проходки левого тоннеля от «Горьковской»",
+                    src: "evdokia_50",
+                  },
+                  {
+                    text: "Устройство стен и перекрытий станционного комплекса (более 580 м³ бетона)",
+                    src: "svobody_beton",
+                  },
+                  {
+                    text: "Строительство пассажирских вестибюлей и внутренняя отделка",
+                    src: "svobody_kompleks",
+                  },
+                  {
+                    text: "Монтаж инженерных систем и благоустройство",
+                    src: "svobody_kompleks",
+                  },
                 ],
               },
               detail:
-                "Тоннели между «Сенной» и «Площадью Свободы» полностью построены (2 из 2). " +
-                "Щит «Владимир» завершил работу в декабре 2025 года. " +
-                "Сейчас активная фаза — возведение станционного комплекса.",
+                "Строительство развёрнуто в котловане на глубине свыше 10 метров. " +
+                "Первый этап выполнен: залито 11 м³ бетона. Всего для железобетонных элементов потребуется более 580 м³. " +
+                "Работы сосредоточены в районе ул. Варварской — вблизи готовых тоннелей метро.",
               outlook:
                 "Пассажиропоток в верхнюю часть города вырастет до 12,5 млн человек в год. " +
                 "Станция станет частью крупного транспортно-пересадочного узла.",
@@ -420,39 +486,61 @@
               lat: 56.32237,
               lng: 44.03726,
               status: "building",
-              progress: 35,
-              year: "декабрь 2027",
+              progress: 15,
+              year: "август 2027",
               line: "Автозаводская",
               tunnelInfo: {
                 toSvobody: { done: 2, total: 2, percent: 100 },
               },
               stages: {
                 done: [
-                  "Тоннели до «Площади Свободы» (2 из 2, ~1,5 км каждый)",
-                  "Первый этап заливки фундамента в стартовом котловане",
-                  "Возведение монолитных стен станции",
-                  "Средний ярус технического блока: 20 т арматуры, 100 м³ бетона",
-                  "Лотковый участок: 78 т арматуры, 310 м³ бетона",
+                  {
+                    text: "Тоннели до «Площади Свободы» (2 из 2, ~1,5 км каждый)",
+                    src: "vladimir_finish2",
+                  },
+                  {
+                    text: "Первый этап заливки фундамента в стартовом котловане",
+                    src: "sennaya_start",
+                  },
+                  {
+                    text: "Возведение монолитных стен станции",
+                    src: "sennaya_kompleks",
+                  },
                 ],
                 current: [
                   {
                     text: "Сооружение перекрытий станционного комплекса",
-                    progress: 30,
+                    progress: 10,
+                    src: "sennaya_start",
                   },
                   {
                     text: "Подготовка котлована под улицей Горького для подземных путей",
                     progress: 20,
+                    src: "sennaya_kp",
                   },
                   {
                     text: "Обвязочная балка: 33 т арматуры, 600 м³ бетона",
-                    progress: 55,
+                    progress: 15,
+                    src: "sennaya_kompleks",
                   },
                 ],
                 remaining: [
-                  "Строительство подземных путей под улицей Горького",
-                  "Архитектурно-отделочные работы",
-                  "Монтаж систем водоснабжения, водоотведения, связи, электроснабжения",
-                  "Благоустройство прилегающей территории",
+                  {
+                    text: "Строительство подземных путей под улицей Горького",
+                    src: "sennaya_kp",
+                  },
+                  {
+                    text: "Архитектурно-отделочные работы",
+                    src: "sennaya_kompleks",
+                  },
+                  {
+                    text: "Монтаж систем водоснабжения, водоотведения, связи, электроснабжения",
+                    src: "sennaya_kompleks",
+                  },
+                  {
+                    text: "Благоустройство прилегающей территории",
+                    src: "sennaya_kompleks",
+                  },
                 ],
               },
               detail:
@@ -468,34 +556,61 @@
               lng: 43.8738,
               status: "building",
               progress: 5,
-              year: "2029",
+              year: "декабрь 2029",
               line: "Сормовско-Мещерская",
               stages: {
                 done: [
-                  "Изъято 627 из 726 объектов недвижимости (85%)",
-                  "Отключение всех сооружений от газа, электричества и воды",
-                  "Выкуп и переоформление зданий на ул. Станционной",
+                  {
+                    text: "Изъято 627 из 726 объектов недвижимости (86%)",
+                    src: "sormovskaya_85",
+                  },
+                  {
+                    text: "Отключение всех сооружений от газа, электричества и воды",
+                    src: "sormovskaya_snos",
+                  },
+                  {
+                    text: "Выкуп и переоформление зданий на ул. Станционной",
+                    src: "sormovskaya_snos",
+                  },
                 ],
                 current: [
                   {
                     text: "Этап 1 (из 8): расчистка территории от частных строений",
                     progress: 40,
+                    src: "sormovskaya_clear",
                   },
                   {
                     text: "Перенос коммунальных сетей",
                     progress: 25,
+                    src: "sormovskaya_clear",
                   },
                   {
                     text: "Снос гаражей на ул. Станционной",
                     progress: 30,
+                    src: "sormovskaya_snos",
                   },
                 ],
                 remaining: [
-                  "Этапы 2–3: завершение расчистки территории (до конца 2026 года)",
-                  "Этапы 4–6: возведение двух камер для старта и приёма щитов",
-                  "Этапы 4–6: сооружение тоннелей и конструкций станции",
-                  "Этап 7: строительство притоннельных сооружений",
-                  "Этап 8: благоустройство прилегающей территории",
+                  {
+                    text: "Этапы 2–3: завершение расчистки территории (до конца 2026 года)",
+                    src: "sormovskaya_clear",
+                  },
+                  {
+                    text: "Этапы 4–6: возведение двух камер для старта и приёма щитов",
+                    src: "sormovskaya_clear",
+                  },
+                  {
+                    text: "Этапы 4–6: сооружение тоннелей и конструкций станции",
+                    src: "sormovskaya_clear",
+                  },
+                  {
+                    text: "Этап 7: строительство притоннельных сооружений",
+                    src: "sormovskaya_clear",
+                  },
+                  {
+                    text: "Этап 8: благоустройство прилегающей территории",
+                    src: "sormovskaya_clear",
+                  },
                 ],
               },
               detail:
@@ -522,8 +637,40 @@
 
       const createdMarkers = {};
 
+      // ============================================================
+      // ПОСТРОЕНИЕ АККОРДЕОНА С КЛИКАБЕЛЬНЫМИ ССЫЛКАМИ
+      // ============================================================
       function buildAccordion(stages, tunnelInfo) {
         let html = '<div class="accordion">';
+
+        function renderStageItem(icon, item) {
+          const text = typeof item === "string" ? item : item.text;
+          const progress =
+            typeof item === "object" && item.progress != null
+              ? item.progress
+              : null;
+          const src = typeof item === "object" && item.src ? item.src : null;
+
+          let textHtml = text;
+          if (src && SOURCES[src]) {
+            textHtml = `<a class="stage-link" href="${SOURCES[src]}" target="_blank" rel="noopener noreferrer">${text}<span class="link-icon">🔗</span></a>`;
+          }
+
+          const progressHtml =
+            progress != null
+              ? `<div class="stage-progress-wrap">
+                              <div class="stage-progress-container">
+                                <div class="stage-progress-fill" style="width:${progress}%"></div>
+                              </div>
+                              <div class="stage-progress-text">${progress}%</div>
+                            </div>`
+              : "";
+
+          return `<div class="stage-item">
+                    <span class="stage-icon">${icon}</span>
+                    <span class="stage-text">${textHtml}${progressHtml}</span>
+                  </div>`;
+        }
 
         if (stages.done && stages.done.length) {
           html += `<div class="acc-item">
@@ -532,50 +679,19 @@
               <span class="arrow">▶</span>
             </div>
             <div class="acc-body">
-              ${stages.done
-                .map(
-                  (item) => `<div class="stage-item">
-                    <span class="stage-icon">✅</span>
-                    <span class="stage-text">${item}</span>
-                  </div>`,
-                )
-                .join("")}
+              ${stages.done.map((item) => renderStageItem("✅", item)).join("")}
             </div>
           </div>`;
         }
 
         if (stages.current && stages.current.length) {
-          html += `<div class="acc-item open">
+          html += `<div class="acc-item">
             <div class="acc-header" onclick="toggleAcc(this)">
               <span>🔄 В работе (${stages.current.length})</span>
               <span class="arrow">▶</span>
             </div>
             <div class="acc-body">
-              ${stages.current
-                .map((item) => {
-                  const text = typeof item === "string" ? item : item.text;
-                  const progress =
-                    typeof item === "object" && item.progress != null
-                      ? item.progress
-                      : null;
-                  return `<div class="stage-item">
-                    <span class="stage-icon">🔄</span>
-                    <span class="stage-text">
-                      ${text}
-                      ${
-                        progress != null
-                          ? `<div class="stage-progress-wrap">
-                              <div class="stage-progress-container">
-                                <div class="stage-progress-fill" style="width:${progress}%"></div>
-                              </div>
-                              <div class="stage-progress-text">${progress}%</div>
-                            </div>`
-                          : ""
-                      }
-                    </span>
-                  </div>`;
-                })
-                .join("")}
+              ${stages.current.map((item) => renderStageItem("🔄", item)).join("")}
             </div>
           </div>`;
         }
@@ -587,14 +703,7 @@
               <span class="arrow">▶</span>
             </div>
             <div class="acc-body">
-              ${stages.remaining
-                .map(
-                  (item) => `<div class="stage-item">
-                    <span class="stage-icon">📋</span>
-                    <span class="stage-text">${item}</span>
-                  </div>`,
-                )
-                .join("")}
+              ${stages.remaining.map((item) => renderStageItem("📋", item)).join("")}
             </div>
           </div>`;
         }
@@ -708,6 +817,8 @@
           className: "station-popup",
           minWidth: 320,
           maxWidth: 380,
+          autoPan: true,
+          autoPanPadding: [20, 20],
         });
         createdMarkers[station.name] = marker;
       }
@@ -864,21 +975,12 @@
         return { done, rest };
       }
 
-      // ============================================================
-      // ОБВОДКА (casing) ДЛЯ МАРШРУТОВ
-      // ============================================================
       const ROUND_STYLE = { lineCap: "round", lineJoin: "round" };
       const SMOOTH_SAMPLES = 16;
 
-      // ============================================================
-      // АДАПТИВНАЯ ТОЛЩИНА МАРШРУТОВ
-      // Чем ближе приближение — тем заметнее линии.
-      // ============================================================
-      const ROUTE_BASE_ZOOM = 13; // зум, на котором толщина = базовой
-      const routeLayers = []; // { layer, baseWeight, baseOpacity, kind }
+      const ROUTE_BASE_ZOOM = 13;
+      const routeLayers = [];
 
-      // Отдельный слой (pane) для белых обводок: они всегда остаются
-      // ПОД цветными линиями, даже когда становятся толще.
       map.createPane("routeCasing");
       map.getPane("routeCasing").style.zIndex = 390;
 
@@ -886,7 +988,6 @@
         routeLayers.push({ layer, baseWeight, baseOpacity, kind });
       }
 
-      // Плавный рост толщины: z13 → ×1.0, z18 → ×2.0
       function routeZoomFactor(zoom) {
         const extra = Math.max(0, zoom - ROUTE_BASE_ZOOM);
         return Math.min(2, 1 + extra * 0.2);
@@ -903,8 +1004,6 @@
 
           const style = { weight };
 
-          // Полупрозрачные (строящиеся) участки при приближении
-          // становятся чётче, но остаются пунктирными.
           if (baseOpacity != null && baseOpacity < 1) {
             const boost = Math.min(0.6, extra * 0.15);
             style.opacity = Math.min(
@@ -917,19 +1016,12 @@
         });
       }
 
-      /**
-       * Рисует полилинию с белой обводкой.
-       * Сначала добавляется более толстая белая линия (каширование),
-       * затем поверх неё — цветная. Возвращает цветную полилинию,
-       * чтобы к ней можно было привязать popup.
-       */
       function addCasedPolyline(path, options) {
         if (!path || path.length < 2) return null;
         const weight = options.weight || 5;
         const opacity = options.opacity != null ? options.opacity : 1;
         const outlineWeight = weight + 4;
 
-        // Белая обводка (в отдельном pane — всегда под цветными линиями)
         const casing = L.polyline(path, {
           pane: "routeCasing",
           color: "#ffffff",
@@ -939,7 +1031,6 @@
         }).addTo(map);
         registerRouteLayer(casing, weight, 0.95, "casing");
 
-        // Цветная линия (сверху)
         const main = L.polyline(path, {
           ...ROUND_STYLE,
           ...options,
@@ -1079,7 +1170,6 @@
         }
       });
 
-      // Действующие линии — с белой обводкой
       lines
         .filter((l) => l.name !== "Строящиеся станции")
         .forEach((line) => {
@@ -1092,22 +1182,15 @@
           });
         });
 
-      // Станции
       lines.forEach((line) => {
         line.stations.forEach((station) => {
           createMarker(station, line.color);
         });
       });
 
-      // ============================================================
-      // АДАПТАЦИЯ ТОЛЩИНЫ МАРШРУТОВ К МАСШТАБУ
-      // ============================================================
       map.on("zoomend", updateRouteWeights);
       updateRouteWeights();
 
-      // ============================================================
-      // СТАТИСТИКА (в консоль)
-      // ============================================================
       console.log("=== МЕТРО НИЖНЕГО НОВГОРОДА ===");
       console.log("Действующие линии:");
       console.log("  • Автозаводская (красная) — 11 станций");
@@ -1123,18 +1206,10 @@
       );
       console.log("  • Тоннели Сенная ↔ Пл. Свободы: построены (2 из 2, 100%)");
       console.log("");
-      console.log("Перспективы развития:");
-      console.log(
-        "  • 80 новых вагонов метро для сохранения интервала движения",
-      );
-      console.log("  • После 2030 года — проработка беспилотных поездов");
-      console.log(
-        "  • Продление Автозаводской линии — драйвер развития площади Сенной",
-      );
-      console.log("");
-      console.log(
-        "Источник данных: новости 2026 г. (ГУММиД, правительство Нижегородской области, «Моспроект-3»)",
-      );
+      console.log("Скорректированные проценты прогресса (сентябрь 2026):");
+      console.log("  • Площадь Свободы: 10% (было 40%)");
+      console.log("  • Сенная: 15% (было 35%)");
+      console.log("  • Сормовская: 5% (без изменений)");
     </script>
   </body>
 </html>
