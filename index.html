@@ -111,8 +111,6 @@
       }
 
       /* ===================== ZOOM CONTROL: СЕРЕДИНА СПРАВА ===================== */
-      /* Сдвигаем весь правый верхний контейнер контролов в вертикальный центр карты.
-         Так как в нём только zoom-контрол — это безопасно. */
       .leaflet-top.leaflet-right {
         top: 50%;
         transform: translateY(-50%);
@@ -312,7 +310,6 @@
 
       /* ===================== АДАПТИВ ===================== */
 
-      /* Планшеты */
       @media (max-width: 900px) {
         #header {
           flex-direction: column;
@@ -325,7 +322,6 @@
         }
       }
 
-      /* Телефоны */
       @media (max-width: 600px) {
         #header {
           padding: 10px 12px;
@@ -348,7 +344,6 @@
           height: 10px;
         }
 
-        /* Попапы занимают почти всю ширину экрана */
         .leaflet-popup-content-wrapper {
           border-radius: 10px;
         }
@@ -365,7 +360,6 @@
           font-size: 11px;
         }
 
-        /* Крупнее тап-зоны в аккордеоне */
         .acc-header {
           padding: 10px 10px;
           font-size: 12.5px;
@@ -378,7 +372,6 @@
           padding: 5px 0;
         }
 
-        /* Кнопка закрытия попапа — крупнее */
         .leaflet-container a.leaflet-popup-close-button {
           width: 28px;
           height: 28px;
@@ -389,13 +382,11 @@
           top: 4px;
         }
 
-        /* Чуть сдвигаем зум-контрол от края на мобильных */
         .leaflet-top.leaflet-right {
           right: 4px;
         }
       }
 
-      /* Узкие телефоны */
       @media (max-width: 400px) {
         #header h1 {
           font-size: 15px;
@@ -412,7 +403,6 @@
         }
       }
 
-      /* Ландшафт на телефоне — экономим вертикаль */
       @media (max-height: 500px) and (orientation: landscape) {
         #header {
           flex-direction: row;
@@ -434,7 +424,6 @@
         }
       }
 
-      /* Уважаем настройку «уменьшить движение» */
       @media (prefers-reduced-motion: reduce) {
         * {
           transition: none !important;
@@ -542,6 +531,14 @@
       }
 
       // ============================================================
+      // ГРАНИЦЫ ПРОСМОТРА: Нижегородская область
+      // ============================================================
+      const NN_OBLAST_BOUNDS = L.latLngBounds(
+        [54.2, 41.4], // юго-запад (lat, lng)
+        [58.1, 47.9], // северо-восток (lat, lng)
+      );
+
+      // ============================================================
       // КАРТА
       // zoomControl отключён — добавляем вручную в topright,
       // а CSS сдвигает его в вертикальный центр правой стороны.
@@ -549,6 +546,9 @@
       const map = L.map("map", {
         zoomControl: false,
         attributionControl: true,
+        maxBounds: NN_OBLAST_BOUNDS,
+        maxBoundsViscosity: 1.0,
+        minZoom: 8,
       }).setView([56.31, 43.97], 13);
 
       L.control.zoom({ position: "topright" }).addTo(map);
@@ -1238,9 +1238,6 @@
       const ROUND_STYLE = { lineCap: "round", lineJoin: "round" };
       const SMOOTH_SAMPLES = 16;
 
-      // ============================================================
-      // СМЕЩЕНИЕ ТОННЕЛЕЙ ОТНОСИТЕЛЬНО ОСЕВОЙ ЛИНИИ
-      // ============================================================
       const TUNNEL_OFFSET_METERS = 6;
 
       const ROUTE_BASE_ZOOM = 13;
@@ -1318,9 +1315,6 @@
         iconAnchor: [8, 8],
       });
 
-      // ============================================================
-      // ТОННЕЛИ
-      // ============================================================
       const tunnels = [
         {
           id: "left",
