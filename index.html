@@ -9,6 +9,16 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
     <link rel="icon" href="favicon.ico" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Метро НН" />
     <style>
       * {
         margin: 0;
@@ -104,7 +114,6 @@
         font-family: inherit;
       }
 
-      /* --- Триггер: по умолчанию светлый (белый) --- */
       .map-style-control .ms-toggle {
         display: flex;
         align-items: center;
@@ -145,7 +154,6 @@
         transform: rotate(180deg);
       }
 
-      /* --- Синий вид при выборе режима «Затемнение» --- */
       body[data-map-style="dark"] .map-style-control .ms-toggle {
         background: rgba(26, 26, 46, 0.92);
         color: #e8ecf5;
@@ -157,7 +165,6 @@
         border-color: rgba(255, 255, 255, 0.38);
       }
 
-      /* --- Меню: по умолчанию светлое --- */
       .map-style-control .ms-menu {
         position: absolute;
         bottom: calc(100% + 6px);
@@ -216,7 +223,6 @@
         text-align: center;
       }
 
-      /* --- Синий вид меню при выборе режима «Затемнение» --- */
       body[data-map-style="dark"] .map-style-control .ms-menu {
         background: rgba(26, 26, 46, 0.96);
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -255,18 +261,14 @@
       }
 
       /* ===================== РЕЖИМЫ ПОДЛОЖКИ ===================== */
-
-      /* Режим 2: полное ч/б */
       body[data-map-style="mono"] .leaflet-tile-pane {
         filter: grayscale(100%) brightness(1.05) contrast(0.95);
       }
 
-      /* Режим 4: затемнение — тайлы приглушены */
       body[data-map-style="dark"] .leaflet-tile-pane {
         filter: brightness(0.55) saturate(0.6);
       }
 
-      /* Режим 5: скрыть подложку полностью */
       body[data-map-style="hide"] .leaflet-tile-pane {
         opacity: 0;
         pointer-events: none;
@@ -277,7 +279,6 @@
           filter 0.2s ease,
           opacity 0.2s ease;
       }
-      /* ===================== /РЕЖИМЫ ПОДЛОЖКИ ===================== */
 
       /* ===================== ZOOM CONTROL: СЕРЕДИНА СПРАВА ===================== */
       .leaflet-top.leaflet-right {
@@ -285,11 +286,6 @@
         transform: translateY(-50%);
       }
 
-      /* ============ КНОПКИ ПРИБЛИЖЕНИЯ ============
-         По умолчанию — белые. В режиме «Затемнение» — синие (в цвет шапки).
-         Активный режим меняется через body[data-map-style]. */
-
-      /* --- Белый вид по умолчанию --- */
       .leaflet-control-zoom.leaflet-bar {
         border: 1px solid rgba(0, 0, 0, 0.15);
         border-radius: 10px;
@@ -324,7 +320,6 @@
         cursor: default;
       }
 
-      /* --- Синий вид в режиме «Затемнение» --- */
       body[data-map-style="dark"] .leaflet-control-zoom.leaflet-bar {
         border: 1px solid rgba(255, 255, 255, 0.18);
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
@@ -847,13 +842,11 @@
         const STORAGE_KEY = "nn-metro-map-style";
         const VALID = MAP_STYLES.map((s) => s.id);
 
-        // --- контейнер контрола ---
         const container = L.DomUtil.create(
           "div",
           "leaflet-control map-style-control",
         );
 
-        // --- кнопка-триггер ---
         const toggleBtn = L.DomUtil.create("button", "ms-toggle", container);
         toggleBtn.type = "button";
         toggleBtn.setAttribute("aria-haspopup", "true");
@@ -867,7 +860,6 @@
         const iconEl = toggleBtn.querySelector(".ms-toggle-icon");
         const labelEl = toggleBtn.querySelector(".ms-toggle-label");
 
-        // --- выпадающий список ---
         const menu = L.DomUtil.create("ul", "ms-menu", container);
         menu.setAttribute("role", "menu");
 
@@ -887,7 +879,6 @@
           return btn;
         });
 
-        // --- открытие / закрытие ---
         function closeMenu() {
           container.classList.remove("open");
           toggleBtn.setAttribute("aria-expanded", "false");
@@ -897,7 +888,6 @@
           toggleBtn.setAttribute("aria-expanded", "true");
         }
 
-        // --- применение режима ---
         function applyStyle(style) {
           if (!VALID.includes(style)) style = "none";
           document.body.dataset.mapStyle = style;
@@ -919,7 +909,6 @@
           }
         }
 
-        // --- события ---
         toggleBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           container.classList.contains("open") ? closeMenu() : openMenu();
@@ -933,11 +922,9 @@
           }),
         );
 
-        // клики внутри контрола не должны уходить в карту
         L.DomEvent.disableClickPropagation(container);
         L.DomEvent.disableScrollPropagation(container);
 
-        // клик вне контрола / по карте / Esc — закрываем список
         document.addEventListener("click", (e) => {
           if (!container.contains(e.target)) closeMenu();
         });
@@ -946,7 +933,6 @@
         });
         map.on("click", closeMenu);
 
-        // --- регистрация контрола на карте (снизу справа) ---
         const MapStyleControl = L.Control.extend({
           options: { position: "bottomright" },
           onAdd() {
@@ -955,7 +941,6 @@
         });
         map.addControl(new MapStyleControl());
 
-        // --- восстановление сохранённого режима ---
         let saved = "none";
         try {
           saved = localStorage.getItem(STORAGE_KEY) || "none";
@@ -1892,6 +1877,17 @@
 
       window.addEventListener("resize", onViewportChange);
       window.addEventListener("orientationchange", onViewportChange);
+
+      // ============================================================
+      // PWA: регистрация service worker
+      // ============================================================
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .catch((err) => console.error("SW registration failed:", err));
+        });
+      }
     </script>
   </body>
 </html>
