@@ -142,10 +142,13 @@
         transform: rotate(180deg);
       }
 
+      /* Меню раскрывается ВВЕРХ, выровнено по правому краю контрола */
       .map-style-control .ms-menu {
         position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
+        bottom: calc(100% + 6px);
+        top: auto;
+        left: auto;
+        right: 0;
         min-width: 100%;
         margin: 0;
         padding: 5px;
@@ -252,6 +255,41 @@
       .leaflet-top.leaflet-right {
         top: 50%;
         transform: translateY(-50%);
+      }
+
+      /* ============ СИНИЕ КНОПКИ ПРИБЛИЖЕНИЯ (в цвет шапки) ============ */
+      .leaflet-control-zoom.leaflet-bar {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+      }
+      .leaflet-control-zoom.leaflet-bar a {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e8ecf5;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        font-size: 18px;
+        font-weight: 700;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .leaflet-control-zoom.leaflet-bar a:last-child {
+        border-bottom: none;
+      }
+      .leaflet-control-zoom.leaflet-bar a:hover {
+        background: linear-gradient(135deg, #2a3050 0%, #22305a 100%);
+        color: #ffffff;
+      }
+      .leaflet-control-zoom.leaflet-bar a.leaflet-disabled,
+      .leaflet-control-zoom.leaflet-bar a.leaflet-disabled:hover {
+        background: rgba(26, 26, 46, 0.5);
+        color: rgba(232, 236, 245, 0.35);
+        cursor: default;
       }
 
       /* ===================== POPUPS ===================== */
@@ -446,6 +484,11 @@
         text-align: right;
       }
 
+      .leaflet-bottom {
+        right: 0px;
+        bottom: 16px;
+      }
+
       /* ===================== АДАПТИВ ===================== */
 
       @media (max-width: 900px) {
@@ -536,10 +579,21 @@
         }
 
         .leaflet-top.leaflet-right {
-          right: 4px;
+          right: 0px;
         }
         .leaflet-top.leaflet-left {
           left: 6px;
+        }
+        .leaflet-bottom.leaflet-right {
+          right: 0px;
+          bottom: 16px;
+        }
+
+        .leaflet-control-zoom.leaflet-bar a {
+          width: 30px;
+          height: 30px;
+          line-height: 30px;
+          font-size: 16px;
         }
       }
 
@@ -700,16 +754,19 @@
       // КАРТА
       // zoomControl отключён — добавляем вручную в topright,
       // а CSS сдвигает его в вертикальный центр правой стороны.
+      // attributionControl отключён — переносим в bottomleft,
+      // чтобы не мешать контролу подложек в правом нижнем углу.
       // ============================================================
       const map = L.map("map", {
         zoomControl: false,
-        attributionControl: true,
+        attributionControl: false,
         maxBounds: NN_OBLAST_BOUNDS,
         maxBoundsViscosity: 1.0,
         minZoom: 8,
       }).setView([56.31, 43.97], 13);
 
       L.control.zoom({ position: "topright" }).addTo(map);
+      L.control.attribution({ position: "bottomleft" }).addTo(map);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
@@ -830,9 +887,9 @@
         });
         map.on("click", closeMenu);
 
-        // --- регистрация контрола на карте ---
+        // --- регистрация контрола на карте (снизу справа) ---
         const MapStyleControl = L.Control.extend({
-          options: { position: "topleft" },
+          options: { position: "bottomright" },
           onAdd() {
             return container;
           },
