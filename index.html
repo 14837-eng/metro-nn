@@ -108,9 +108,12 @@
         background: #9e9e9e;
       }
 
-      /* ===================== MAP STYLE SWITCHER (на карте) ===================== */
+      /* ===================== MAP STYLE SWITCHER (на карте, обычный HTML) ===================== */
       .map-style-control {
-        position: relative;
+        position: absolute;
+        right: 10px;
+        bottom: 30px;
+        z-index: 1200;
         font-family: inherit;
       }
 
@@ -589,6 +592,10 @@
           height: 10px;
         }
 
+        .map-style-control {
+          right: 8px;
+          bottom: 26px;
+        }
         .map-style-control .ms-toggle {
           padding: 7px 10px;
           font-size: 11px;
@@ -718,6 +725,65 @@
     </header>
     <div class="map-container">
       <div id="map"></div>
+
+      <!-- Переключатель подложки: обычный HTML, без Leaflet API -->
+      <div class="map-style-control" id="mapStyleControl">
+        <button
+          class="ms-toggle"
+          type="button"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-label="Режим подложки карты"
+        >
+          <span class="ms-toggle-icon">🗺️</span>
+          <span class="ms-toggle-label">Обычный</span>
+          <span class="ms-caret">▾</span>
+        </button>
+
+        <ul class="ms-menu" role="menu">
+          <li>
+            <button
+              type="button"
+              data-style="none"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="ms-icon">🗺️</span><span>Обычный</span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-style="mono"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="ms-icon">⬜</span><span>Ч/Б</span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-style="dark"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="ms-icon">🌙</span><span>Затемнение</span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              data-style="hide"
+              role="menuitemradio"
+              aria-checked="false"
+            >
+              <span class="ms-icon">🚫</span><span>Скрыть</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
       <div class="footer"></div>
     </div>
 
@@ -820,7 +886,6 @@
       }).setView([56.31, 43.97], 13);
 
       L.control.zoom({ position: "topright" }).addTo(map);
-      L.control.attribution({ position: "bottomleft" }).addTo(map);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
@@ -829,55 +894,31 @@
       }).addTo(map);
 
       // ============================================================
-      // ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ ПОДЛОЖКИ — выпадающий список на карте
+      // ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ ПОДЛОЖКИ — обычный HTML-элемент над картой
       // ============================================================
-      const MAP_STYLES = [
-        { id: "none", label: "Обычный", icon: "🗺️" },
-        { id: "mono", label: "Ч/Б", icon: "⬜" },
-        { id: "dark", label: "Затемнение", icon: "🌙" },
-        { id: "hide", label: "Скрыть", icon: "🚫" },
-      ];
-
       function initMapStyleSwitcher(map) {
         const STORAGE_KEY = "nn-metro-map-style";
-        const VALID = MAP_STYLES.map((s) => s.id);
 
-        const container = L.DomUtil.create(
-          "div",
-          "leaflet-control map-style-control",
-        );
+        const container = document.getElementById("mapStyleControl");
+        if (!container) return () => {};
 
-        const toggleBtn = L.DomUtil.create("button", "ms-toggle", container);
-        toggleBtn.type = "button";
-        toggleBtn.setAttribute("aria-haspopup", "true");
-        toggleBtn.setAttribute("aria-expanded", "false");
-        toggleBtn.setAttribute("aria-label", "Режим подложки карты");
-        toggleBtn.innerHTML =
-          '<span class="ms-toggle-icon">🗺️</span>' +
-          '<span class="ms-toggle-label">Обычный</span>' +
-          '<span class="ms-caret">▾</span>';
-
+        const toggleBtn = container.querySelector(".ms-toggle");
         const iconEl = toggleBtn.querySelector(".ms-toggle-icon");
         const labelEl = toggleBtn.querySelector(".ms-toggle-label");
+        const itemButtons = Array.from(
+          container.querySelectorAll(".ms-menu button[data-style]"),
+        );
 
-        const menu = L.DomUtil.create("ul", "ms-menu", container);
-        menu.setAttribute("role", "menu");
-
-        const itemButtons = MAP_STYLES.map((style) => {
-          const li = L.DomUtil.create("li", "", menu);
-          const btn = L.DomUtil.create("button", "", li);
-          btn.type = "button";
-          btn.dataset.style = style.id;
-          btn.setAttribute("role", "menuitemradio");
-          btn.setAttribute("aria-checked", "false");
-          btn.innerHTML =
-            '<span class="ms-icon">' +
-            style.icon +
-            "</span><span>" +
-            style.label +
-            "</span>";
-          return btn;
+        // Метаданные берём из самой разметки, чтобы не дублировать список в JS
+        const STYLE_META = {};
+        itemButtons.forEach((btn) => {
+          STYLE_META[btn.dataset.style] = {
+            icon: btn.querySelector(".ms-icon")?.textContent ?? "",
+            label:
+              btn.lastElementChild?.textContent?.trim() ?? btn.dataset.style,
+          };
         });
+        const VALID = Object.keys(STYLE_META);
 
         function closeMenu() {
           container.classList.remove("open");
@@ -898,9 +939,11 @@
             b.setAttribute("aria-checked", on ? "true" : "false");
           });
 
-          const meta = MAP_STYLES.find((s) => s.id === style) || MAP_STYLES[0];
-          labelEl.textContent = meta.label;
-          iconEl.textContent = meta.icon;
+          const meta = STYLE_META[style] || STYLE_META[VALID[0]];
+          if (meta) {
+            labelEl.textContent = meta.label;
+            iconEl.textContent = meta.icon;
+          }
 
           try {
             localStorage.setItem(STORAGE_KEY, style);
@@ -922,9 +965,6 @@
           }),
         );
 
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.disableScrollPropagation(container);
-
         document.addEventListener("click", (e) => {
           if (!container.contains(e.target)) closeMenu();
         });
@@ -932,14 +972,6 @@
           if (e.key === "Escape") closeMenu();
         });
         map.on("click", closeMenu);
-
-        const MapStyleControl = L.Control.extend({
-          options: { position: "bottomright" },
-          onAdd() {
-            return container;
-          },
-        });
-        map.addControl(new MapStyleControl());
 
         let saved = "none";
         try {
