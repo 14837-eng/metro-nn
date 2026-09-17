@@ -60,6 +60,14 @@
         opacity: 0.7;
         margin-top: 2px;
       }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
       #legend {
         display: flex;
         gap: 20px;
@@ -89,6 +97,107 @@
         background: #9e9e9e;
       }
 
+      /* ===================== MAP STYLE SWITCHER (на карте) ===================== */
+      .map-style-control {
+        position: relative;
+        font-family: inherit;
+      }
+
+      .map-style-control .ms-toggle {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 12px;
+        background: rgba(26, 26, 46, 0.92);
+        color: #e8ecf5;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
+        white-space: nowrap;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+      }
+      .map-style-control .ms-toggle:hover {
+        background: rgba(42, 48, 80, 0.96);
+        border-color: rgba(255, 255, 255, 0.38);
+      }
+      .map-style-control .ms-toggle-icon {
+        font-size: 14px;
+        line-height: 1;
+      }
+      .map-style-control .ms-caret {
+        font-size: 10px;
+        opacity: 0.7;
+        transition: transform 0.2s;
+      }
+      .map-style-control.open .ms-caret {
+        transform: rotate(180deg);
+      }
+
+      .map-style-control .ms-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        min-width: 100%;
+        margin: 0;
+        padding: 5px;
+        list-style: none;
+        background: rgba(26, 26, 46, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+        display: none;
+        z-index: 1300;
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      .map-style-control.open .ms-menu {
+        display: block;
+      }
+      .map-style-control .ms-menu li {
+        list-style: none;
+      }
+      .map-style-control .ms-menu button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 10px;
+        background: transparent;
+        border: none;
+        border-radius: 7px;
+        color: #dfe4f0;
+        font-family: inherit;
+        font-size: 12px;
+        text-align: left;
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+          background 0.12s,
+          color 0.12s;
+      }
+      .map-style-control .ms-menu button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .map-style-control .ms-menu button.active {
+        background: #4caf50;
+        color: #fff;
+        font-weight: 600;
+      }
+      .map-style-control .ms-menu .ms-icon {
+        font-size: 13px;
+        width: 16px;
+        text-align: center;
+      }
+
       /* ===================== MAP ===================== */
       .map-container {
         position: relative;
@@ -109,6 +218,35 @@
         z-index: 10000;
         pointer-events: none;
       }
+
+      /* ===================== РЕЖИМЫ ПОДЛОЖКИ =====================
+         Все фильтры применяются ТОЛЬКО к слою тайлов OSM
+         (.leaflet-tile-pane). Маркеры, линии метро и попапы
+         находятся в других pane и остаются чёткими. */
+
+      /* Режим 2: полное ч/б */
+      body[data-map-style="mono"] .leaflet-tile-pane {
+        filter: grayscale(100%) brightness(1.05) contrast(0.95);
+      }
+
+      /* Режим 4: затемнение — тайлы приглушены */
+      body[data-map-style="dark"] .leaflet-tile-pane {
+        filter: brightness(0.55) saturate(0.6);
+      }
+
+      /* Режим 5: скрыть подложку полностью */
+      body[data-map-style="hide"] .leaflet-tile-pane {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Смягчаем возможные швы между тайлами после размытия */
+      .leaflet-tile {
+        transition:
+          filter 0.2s ease,
+          opacity 0.2s ease;
+      }
+      /* ===================== /РЕЖИМЫ ПОДЛОЖКИ ===================== */
 
       /* ===================== ZOOM CONTROL: СЕРЕДИНА СПРАВА ===================== */
       .leaflet-top.leaflet-right {
@@ -317,6 +455,12 @@
           gap: 10px;
           padding: 12px 16px;
         }
+        .header-right {
+          width: 100%;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
         #legend {
           gap: 8px 18px;
         }
@@ -342,6 +486,15 @@
         .dot {
           width: 10px;
           height: 10px;
+        }
+
+        .map-style-control .ms-toggle {
+          padding: 7px 10px;
+          font-size: 11px;
+        }
+        .map-style-control .ms-menu button {
+          padding: 9px 10px;
+          font-size: 12px;
         }
 
         .leaflet-popup-content-wrapper {
@@ -384,6 +537,9 @@
 
         .leaflet-top.leaflet-right {
           right: 4px;
+        }
+        .leaflet-top.leaflet-left {
+          left: 6px;
         }
       }
 
@@ -432,7 +588,7 @@
       }
     </style>
   </head>
-  <body>
+  <body data-map-style="none">
     <header id="header">
       <div>
         <h1>🚇 Метро Нижнего Новгорода</h1>
@@ -440,10 +596,12 @@
           Неофициальная интерактивная карта прогресса строительства
         </div>
       </div>
-      <div id="legend">
-        <div class="item"><span class="dot green"></span> Работает</div>
-        <div class="item"><span class="dot orange"></span> Строится</div>
-        <div class="item"><span class="dot gray"></span> В проекте</div>
+      <div class="header-right">
+        <div id="legend">
+          <div class="item"><span class="dot green"></span> Работает</div>
+          <div class="item"><span class="dot orange"></span> Строится</div>
+          <div class="item"><span class="dot gray"></span> В проекте</div>
+        </div>
       </div>
     </header>
     <div class="map-container">
@@ -556,7 +714,144 @@
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
         maxZoom: 18,
+        className: "osm-tiles", // для возможной точечной настройки
       }).addTo(map);
+
+      // ============================================================
+      // ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ ПОДЛОЖКИ — выпадающий список на карте
+      // ============================================================
+      const MAP_STYLES = [
+        { id: "none", label: "Обычный", icon: "🗺️" },
+        { id: "mono", label: "Ч/Б", icon: "⬜" },
+        { id: "dark", label: "Затемнение", icon: "🌙" },
+        { id: "hide", label: "Скрыть", icon: "🚫" },
+      ];
+
+      function initMapStyleSwitcher(map) {
+        const STORAGE_KEY = "nn-metro-map-style";
+        const VALID = MAP_STYLES.map((s) => s.id);
+
+        // --- контейнер контрола ---
+        const container = L.DomUtil.create(
+          "div",
+          "leaflet-control map-style-control",
+        );
+
+        // --- кнопка-триггер ---
+        const toggleBtn = L.DomUtil.create("button", "ms-toggle", container);
+        toggleBtn.type = "button";
+        toggleBtn.setAttribute("aria-haspopup", "true");
+        toggleBtn.setAttribute("aria-expanded", "false");
+        toggleBtn.setAttribute("aria-label", "Режим подложки карты");
+        toggleBtn.innerHTML =
+          '<span class="ms-toggle-icon">🗺️</span>' +
+          '<span class="ms-toggle-label">Обычный</span>' +
+          '<span class="ms-caret">▾</span>';
+
+        const iconEl = toggleBtn.querySelector(".ms-toggle-icon");
+        const labelEl = toggleBtn.querySelector(".ms-toggle-label");
+
+        // --- выпадающий список ---
+        const menu = L.DomUtil.create("ul", "ms-menu", container);
+        menu.setAttribute("role", "menu");
+
+        const itemButtons = MAP_STYLES.map((style) => {
+          const li = L.DomUtil.create("li", "", menu);
+          const btn = L.DomUtil.create("button", "", li);
+          btn.type = "button";
+          btn.dataset.style = style.id;
+          btn.setAttribute("role", "menuitemradio");
+          btn.setAttribute("aria-checked", "false");
+          btn.innerHTML =
+            '<span class="ms-icon">' +
+            style.icon +
+            "</span><span>" +
+            style.label +
+            "</span>";
+          return btn;
+        });
+
+        // --- открытие / закрытие ---
+        function closeMenu() {
+          container.classList.remove("open");
+          toggleBtn.setAttribute("aria-expanded", "false");
+        }
+        function openMenu() {
+          container.classList.add("open");
+          toggleBtn.setAttribute("aria-expanded", "true");
+        }
+
+        // --- применение режима ---
+        function applyStyle(style) {
+          if (!VALID.includes(style)) style = "none";
+          document.body.dataset.mapStyle = style;
+
+          itemButtons.forEach((b) => {
+            const on = b.dataset.style === style;
+            b.classList.toggle("active", on);
+            b.setAttribute("aria-checked", on ? "true" : "false");
+          });
+
+          const meta = MAP_STYLES.find((s) => s.id === style) || MAP_STYLES[0];
+          labelEl.textContent = meta.label;
+          iconEl.textContent = meta.icon;
+
+          try {
+            localStorage.setItem(STORAGE_KEY, style);
+          } catch (e) {
+            /* localStorage может быть недоступен */
+          }
+        }
+
+        // --- события ---
+        toggleBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          container.classList.contains("open") ? closeMenu() : openMenu();
+        });
+
+        itemButtons.forEach((btn) =>
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            applyStyle(btn.dataset.style);
+            closeMenu();
+          }),
+        );
+
+        // клики внутри контрола не должны уходить в карту
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        // клик вне контрола / по карте / Esc — закрываем список
+        document.addEventListener("click", (e) => {
+          if (!container.contains(e.target)) closeMenu();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeMenu();
+        });
+        map.on("click", closeMenu);
+
+        // --- регистрация контрола на карте ---
+        const MapStyleControl = L.Control.extend({
+          options: { position: "topleft" },
+          onAdd() {
+            return container;
+          },
+        });
+        map.addControl(new MapStyleControl());
+
+        // --- восстановление сохранённого режима ---
+        let saved = "none";
+        try {
+          saved = localStorage.getItem(STORAGE_KEY) || "none";
+        } catch (e) {
+          /* игнорируем */
+        }
+        applyStyle(saved);
+
+        return applyStyle;
+      }
+
+      initMapStyleSwitcher(map);
 
       // ============================================================
       // ДАННЫЕ (актуализировано на 13.09.2026)
