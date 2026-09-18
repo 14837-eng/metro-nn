@@ -1753,10 +1753,12 @@
         iconAnchor: [8, 8],
       });
 
+      const START_POSITION_FROM_GORCOVSKAYA = [56.31515, 44.0008];
+
       const tunnels = [
         {
           id: "left",
-          from: "Горьковская",
+          from: START_POSITION_FROM_GORCOVSKAYA,
           to: "Площадь Свободы",
           color: "#ff9800",
           weight: 5,
@@ -1767,7 +1769,7 @@
         },
         {
           id: "right",
-          from: "Горьковская",
+          from: START_POSITION_FROM_GORCOVSKAYA,
           to: "Площадь Свободы",
           color: "#0066cc",
           weight: 5,
@@ -1795,8 +1797,8 @@
       ];
 
       function buildTunnelPath(t) {
-        const from = coords(t.from);
-        const to = coords(t.to);
+        const from = Array.isArray(t.from) ? t.from : coords(t.from);
+        const to = Array.isArray(t.to) ? t.to : coords(t.to);
         if (!from || !to) return null;
         const via = (t.via || [])
           .map((p) => (Array.isArray(p) ? p : coords(p)))
