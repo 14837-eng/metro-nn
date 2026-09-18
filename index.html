@@ -805,6 +805,7 @@
         evdokia_start:
           "https://nn.rbc.ru/nn/freenews/6a181c3a9a794725aba1c10e?from=main_lines_7",
         alena_start: "https://nn.rbc.ru/nn/freenews/6a181c3a9a794725aba1c10e",
+        alena_100m: "https://t.me/metroHH/2802",
         vladimir_finish:
           "https://nn.rbc.ru/nn/freenews/6943cee19a79472d6e5d24a8?from=regional_newsfeed",
         sennaya_start: "https://nn.rbc.ru/nn/freenews/69789ad49a79470a0d1ceed5",
@@ -987,7 +988,7 @@
       initMapStyleSwitcher(map);
 
       // ============================================================
-      // ДАННЫЕ (актуализировано на 13.09.2026)
+      // ДАННЫЕ (актуализировано на 18.09.2026)
       // ============================================================
       const lines = [
         {
@@ -1090,12 +1091,18 @@
               lat: 56.31782,
               lng: 44.013717,
               status: "building",
-              progress: 25,
+              progress: 27,
               year: "август 2027",
               line: "Автозаводская",
               tunnelInfo: {
-                left: { done: 270, total: 485, percent: 56 },
-                right: { done: 0, total: 486, percent: 0, started: true },
+                left: { done: 270, total: 485, percent: 56, unit: "колец" },
+                right: {
+                  done: 100,
+                  total: 730,
+                  percent: 14,
+                  started: true,
+                  unit: "метров",
+                },
               },
               stages: {
                 done: [
@@ -1127,8 +1134,9 @@
                     src: "evdokia_50",
                   },
                   {
-                    text: "Проходка правого тоннеля от «Горьковской» (щит «Алёна»): начата, данных о прогрессе нет",
-                    src: "alena_start",
+                    text: "Проходка правого тоннеля от «Горьковской» (щит «Алёна»): пройдено 100 из 730 метров (14%), щит вышел за границы стартового котлована",
+                    progress: 14,
+                    src: "alena_100m",
                   },
                 ],
                 remaining: [
@@ -1138,7 +1146,7 @@
                   },
                   {
                     text: "Завершение проходки правого тоннеля от «Горьковской» (щит «Алёна»)",
-                    src: "alena_start",
+                    src: "alena_100m",
                   },
                   {
                     text: "Устройство стен и перекрытий станционного комплекса (более 580 м³ бетона)",
@@ -1389,19 +1397,21 @@
           let tHtml = "";
           if (tunnelInfo.left) {
             const t = tunnelInfo.left;
+            const unit = t.unit || "колец";
             tHtml += `<div class="stage-text" style="margin-bottom:6px;">
               Левый тоннель (Горьковская → Свободы):
               <div class="stage-progress-container" style="margin-top:3px;">
                 <div class="stage-progress-fill" style="width:${t.percent}%"></div>
               </div>
-              <div class="stage-progress-text">${t.done} / ${t.total} колец (${t.percent}%)</div>
+              <div class="stage-progress-text">${t.done} / ${t.total} ${unit} (${t.percent}%)</div>
             </div>`;
           }
           if (tunnelInfo.right) {
             const t = tunnelInfo.right;
+            const unit = t.unit || "колец";
             const statusText = t.started
               ? t.done > 0
-                ? `пройдено ${t.done} из ${t.total} колец`
+                ? `пройдено ${t.done} из ${t.total} ${unit}`
                 : "проходка начата, данных о прогрессе нет"
               : "ожидает начала";
             const rightProgress = t.percent != null ? t.percent : 0;
@@ -1760,10 +1770,10 @@
           from: "Горьковская",
           to: "Площадь Свободы",
           color: "#0066cc",
-          weight: 2,
+          weight: 5,
           offset: -TUNNEL_OFFSET_METERS,
           started: true,
-          progress: { done: 0, total: 486 },
+          progress: { done: 100, total: 730, unit: "метров" },
           shield: { name: "Алёна", atEnd: true },
           label: "Правый тоннель (Горьковская → Пл. Свободы)",
         },
@@ -1801,6 +1811,8 @@
         if (t.offset) path = offsetPath(path, t.offset);
         path = smoothPath(path, SMOOTH_SAMPLES);
 
+        // Для тоннелей с прогрессом в метрах (не в кольцах) — считаем процент отдельно
+        const hasMeters = t.progress && t.progress.unit === "метров";
         const percent = t.progress
           ? Math.round((t.progress.done / t.progress.total) * 100)
           : 0;
@@ -1815,17 +1827,23 @@
         }
 
         if (t.progress && t.progress.done > 0) {
-          const t01 = t.progress.done / t.progress.total;
+          // Для метров используем процент от общего прогресса, но не прогрессбар
+          // по кольцам: t01 — доля пройденного пути
+          const t01 = hasMeters
+            ? Math.min(1, t.progress.done / t.progress.total)
+            : t.progress.done / t.progress.total;
           const { done, rest } = splitPath(path, t01);
           const donePoint = pointAlongPath(path, t01);
+
+          const progressLabel = hasMeters
+            ? `Пройдено ${t.progress.done} из ${t.progress.total} ${t.progress.unit} (${percent}%)`
+            : `Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`;
 
           addCasedPolyline(done, {
             color: t.color,
             weight: t.weight,
             opacity: 0.9,
-          }).bindPopup(
-            `${t.label}<br>Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
-          );
+          }).bindPopup(`${t.label}<br>${progressLabel}`);
 
           if (rest.length > 1) {
             addCasedPolyline(rest, {
@@ -1841,7 +1859,7 @@
               .addTo(map)
               .bindPopup(
                 `🛠️ Щит «${t.shield.name}» — текущее положение<br>` +
-                  `Пройдено ${t.progress.done} из ${t.progress.total} колец (${percent}%)`,
+                  progressLabel,
               );
           }
           return;
@@ -1851,7 +1869,7 @@
           const shieldPart = t.shield ? `щитом «${t.shield.name}» ` : "";
           const statusText =
             t.progress && t.progress.done > 0
-              ? `Пройдено ${t.progress.done} из ${t.progress.total} колец`
+              ? `Пройдено ${t.progress.done} из ${t.progress.total} ${t.progress.unit || "колец"}`
               : "Проходка начата, данных о прогрессе нет";
           addCasedPolyline(path, {
             color: t.color,
