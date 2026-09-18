@@ -1882,6 +1882,37 @@
         }
       });
 
+      // ============================================================
+      // СТАРТОВАЯ ПЛОЩАДКА (стартовый котлован щитов)
+      // ============================================================
+      const startSiteIcon = L.divIcon({
+        className: "start-site-marker",
+        html: `<div style="
+                  width: 34px; height: 34px;
+                  background: #ea9d2a;
+                  border-radius: 50%;
+                  border: 3px solid #ffffff;
+                  box-shadow: 0 3px 12px rgba(0,0,0,0.45);
+                  display: flex; align-items: center; justify-content: center;
+                  font-size: 16px;
+                  line-height: 1;
+              ">🚇</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18],
+      });
+
+      L.marker(START_POSITION_FROM_GORCOVSKAYA, {
+        icon: startSiteIcon,
+        zIndexOffset: 500,
+      })
+        .addTo(map)
+        .bindPopup(
+          `<div class="popup-title">🚇 Стартовый котлован</div>` +
+            `<div class="popup-line">Точка старта тоннелепроходческих щитов <b>«Евдокия»</b> и <b>«Алёна»</b></div>` +
+            `<div class="popup-note">Отсюда ведётся проходка двух тоннелей в сторону станции «Площадь Свободы».</div>`,
+        );
+
       lines
         .filter((l) => l.name !== "Строящиеся станции")
         .forEach((line) => {
